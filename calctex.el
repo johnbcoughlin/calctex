@@ -7,22 +7,10 @@
 ")
 
 (defvar calctex--last-overlay nil)
-(defvar calctex--last-frag nil)
-;; Sidechannel used to store the value of calc-line-numbering, so that it is usable
-;; in our hook without depending on hook execution ordering.
+(defvar calctex--last-frag nil
+  "Sidechannel used to store the value of calc-line-numbering, so that it is usable
+in our hook without depending on hook execution ordering.")
 (defvar calctex--calc-line-numbering nil)
-
-;; Set up the renderer
-(defun calctex-renderer-start ()
-  (setq libcalctex-renderer
-        (libcalctex-start-renderer
-         calctex-latex-preamble
-         10)))
-
-(defun calctex-renderer-stop ()
-  (progn
-    (libcalctex-stop-renderer libhypertex-renderer)
-    (setq libcalctex-renderer nil)))
 
 (define-minor-mode calctex-mode
   "Toggle HyperLaTeX mode."
