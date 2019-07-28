@@ -1,122 +1,120 @@
-(require 'evil)
 (require 'latex)
 (require 'tex)
-(add-to-list 'load-path "~/src/hypertex/dist")
-(require 'libhypertex)
+(require 'libcalctex)
 
-(defvar hypertex-latex-preamble
+(defvar calctex-latex-preamble
   "
 ")
 
-(defvar hypertex--last-overlay nil)
-(defvar hypertex--last-frag nil)
+(defvar calctex--last-overlay nil)
+(defvar calctex--last-frag nil)
 ;; Sidechannel used to store the value of calc-line-numbering, so that it is usable
 ;; in our hook without depending on hook execution ordering.
-(defvar hypertex--calc-line-numbering nil)
+(defvar calctex--calc-line-numbering nil)
 
 ;; Set up the renderer
-(defun hypertex-renderer-start ()
-  (setq libhypertex-renderer
-        (libhypertex-start-renderer
-         hypertex-latex-preamble
+(defun calctex-renderer-start ()
+  (setq libcalctex-renderer
+        (libcalctex-start-renderer
+         calctex-latex-preamble
          10)))
 
-(defun hypertex-renderer-stop ()
+(defun calctex-renderer-stop ()
   (progn
-    (libhypertex-stop-renderer libhypertex-renderer)
-    (setq libhypertex-renderer nil)))
+    (libcalctex-stop-renderer libhypertex-renderer)
+    (setq libcalctex-renderer nil)))
 
-(define-minor-mode hypertex-mode
+(define-minor-mode calctex-mode
   "Toggle HyperLaTeX mode."
   nil
-  " HyperTeX"
+  "cTX"
   :keymap (make-sparse-keymap)
-  (if hypertex-mode
+  (if calctex-mode
       (progn
-        (add-hook 'pre-command-hook 'hypertex--precommand)
-        (add-hook 'post-command-hook 'hypertex--postcommand)
-        (add-hook 'post-self-insert-hook 'hypertex--postcommand)
-        (hypertex-renderer-start)
+        (add-hook 'pre-command-hook 'calctex--precommand)
+        (add-hook 'post-command-hook 'calctex--postcommand)
+        (add-hook 'post-self-insert-hook 'calctex--postcommand)
+        (calctex-renderer-start)
         )
-    (hypertex-renderer-stop)
-    (remove-hook 'pre-command-hook 'hypertex--precommand)
-    (remove-hook 'post-command-hook 'hypertex--postcommand)
-    (remove-hook 'post-self-insert-hook 'hypertex--postcommand)
-    (hypertex--remove-overlays)
+    (calctex-renderer-stop)
+    (remove-hook 'pre-command-hook 'calctex--precommand)
+    (remove-hook 'post-command-hook 'calctex--postcommand)
+    (remove-hook 'post-self-insert-hook 'calctex--postcommand)
+    (calctex--remove-overlays)
     ))
 
-(defun hypertex--precommand ()
+(defun calctex--precommand ()
   (progn
-    (setq hypertex--calc-line-numbering calc-line-numbering)
+    (setq calctex--calc-line-numbering calc-line-numbering)
     ))
 
-(defun hypertex--postcommand ()
+(defun calctex--postcommand ()
   (progn
-    (hypertex--render-just-exited-overlay)
+    (calctex--render-just-exited-overlay)
     ;; This function will override the variables used by the previous one
-    (hypertex--create-line-overlays)
+    (calctex--create-line-overlays)
 ))
 
-(defun hypertex--render-overlay-at-point ()
-  (let ((frag (hypertex-latex-fragment-at-point)))
+(defun calctex--render-overlay-at-point ()
+  (let ((frag (calctex-latex-fragment-at-point)))
     (if frag
-        (let ((ov (hypertex--get-or-create-overlay-at-frag frag)))
+        (let ((ov (calctex--get-or-create-overlay-at-frag frag)))
           (if ov
               (progn
-                (hypertex--render-overlay-at-frag frag ov)
-                (setq hypertex--last-overlay ov
-                      hypertex--last-frag frag)
+                (calctex--render-overlay-at-frag frag ov)
+                (setq calctex--last-overlay ov
+                      calctex--last-frag frag)
                 )
             ()))
       ())))
 
-(defun hypertex--render-just-exited-overlay ()
-  (if (and (not (hypertex-latex-fragment-at-point))
-           hypertex--last-overlay
-           hypertex--last-frag)
+(defun calctex--render-just-exited-overlay ()
+  (if (and (not (calctex-latex-fragment-at-point))
+           calctex--last-overlay
+           calctex--last-frag)
       (progn
-        (hypertex--render-overlay-at-frag hypertex--last-frag hypertex--last-overlay)
-        (setq hypertex--last-overlay nil
-              hypertex--last-frag nil))))
+        (calctex--render-overlay-at-frag hypertex--last-frag hypertex--last-overlay)
+        (setq calctex--last-overlay nil
+              calctex--last-frag nil))))
 
-(defun hypertex--modification-hook (ov after beg end &optional len)
+(defun calctex--modification-hook (ov after beg end &optional len)
   (condition-case nil
-      (hypertex--render-overlay-at-point)
+      (calctex--render-overlay-at-point)
     (error (progn
              (message "error happened!")
-             (hypertex--remove-overlay-at-point)))))
+             (calctex--remove-overlay-at-point)))))
 
-(defun hypertex--get-or-create-overlay-at-frag (frag)
+(defun calctex--get-or-create-overlay-at-frag (frag)
   (let* ((beg (org-element-property :begin frag))
          (end (save-excursion
                 (goto-char (org-element-property :end frag))
                 (skip-chars-backward " \r\t\n")
                 (point))))
-    (hypertex--get-or-create-overlay beg end)))
+    (calctex--get-or-create-overlay beg end)))
 
-(defun hypertex--get-or-create-overlay (beg end)
+(defun calctex--get-or-create-overlay (beg end)
   (let* ((overlays (cl-remove-if-not
-                    (lambda (o) (eq (overlay-get o 'org-overlay-type) 'org-hypertex-overlay))
+                    (lambda (o) (eq (overlay-get o 'org-overlay-type) 'org-calctex-overlay))
                     (overlays-in beg end)))
          (overlay (if overlays (car overlays) nil)))
     (if overlay
         overlay
       (let ((ov (make-overlay beg end)))
-        (progn (overlay-put ov 'org-overlay-type 'org-hypertex-overlay)
+        (progn (overlay-put ov 'org-overlay-type 'org-calctex-overlay)
                (overlay-put ov 'priority -60)
                (overlay-put ov 'evaporate t)
-               (overlay-put ov 'modification-hooks (list 'hypertex--modification-hook))
-               (overlay-put ov 'hypertex-overlay-id (sha1 (buffer-substring beg end)))
+               (overlay-put ov 'modification-hooks (list 'calctex--modification-hook))
+               (overlay-put ov 'calctex-overlay-id (sha1 (buffer-substring beg end)))
                ov)))))
 
-(defun hypertex--render-overlay-at-frag (frag ov)
+(defun calctex--render-overlay-at-frag (frag ov)
   (let* ((tex (org-element-property :value frag))
-         (fg (hypertex-latex-color :foreground))
-         (cursor-color (hypertex-latex-color-format (face-background 'cursor)))
+         (fg (calctex-latex-color :foreground))
+         (cursor-color (calctex-latex-color-format (face-background 'cursor)))
          )
     (let ((img-file
-               (libhypertex-render-tex
-                libhypertex-renderer
+               (libcalctex-render-tex
+                libcalctex-renderer
                 fg
                 cursor-color
                 tex
@@ -134,12 +132,12 @@
               ())
             (setq disable-point-adjustment t)))))
 
-(defun hypertex--render-overlay-at (tex ov)
-  (let* ((fg (hypertex-latex-color :foreground))
-         (cursor-color (hypertex-latex-color-format (face-background 'cursor)))
+(defun calctex--render-overlay-at (tex ov)
+  (let* ((fg (calctex-latex-color :foreground))
+         (cursor-color (calctex-latex-color-format (face-background 'cursor)))
          (img-file
-          (libhypertex-render-tex
-           libhypertex-renderer
+          (libcalctex-render-tex
+           libcalctex-renderer
            fg
            cursor-color
            tex
@@ -157,18 +155,18 @@
                              )))
       (setq disable-point-adjustment t))))
 
-(defun hypertex-latex-color (attr)
+(defun calctex-latex-color (attr)
   "Return a RGB color for the LaTeX color package."
-  (hypertex-latex-color-format (face-attribute 'default attr nil)))
+  (calctex-latex-color-format (face-attribute 'default attr nil)))
 
-(defun hypertex-latex-color-format (color-name)
+(defun calctex-latex-color-format (color-name)
   "Convert COLOR-NAME to a RGB color value."
   (apply #'format "%s %s %s"
          (mapcar 'org-normalize-color
                  (color-values color-name))))
 
-(defun hypertex--overlay-image-file (ov)
-  (let* ((id (overlay-get ov 'hypertex-overlay-id))
+(defun calctex--overlay-image-file (ov)
+  (let* ((id (overlay-get ov 'calctex-overlay-id))
          (file (buffer-file-name (buffer-base-buffer)))
          (parent-dir (if (or (not file) (file-remote-p file))
                   temporary-file-directory
@@ -177,7 +175,7 @@
          (img_file (concat dir (format "org-ltximg_%s.png" id))))
     img_file))
 
-(defun hypertex-latex-fragment-at-point ()
+(defun calctex-latex-fragment-at-point ()
   "Returns the LaTeX fragment at point, or nil if none"
   (let ((ctx (org-element-context)))
     (if (or (eq 'latex-fragment (org-element-type ctx))
@@ -185,22 +183,22 @@
         ctx
       nil)))
 
-(defun hypertex--overlay-at-point ()
+(defun calctex--overlay-at-point ()
   (car (cl-remove-if-not
-        (lambda (o) (eq (overlay-get o 'org-overlay-type) 'org-hypertex-overlay))
+        (lambda (o) (eq (overlay-get o 'org-overlay-type) 'org-calctex-overlay))
         (overlays-at (point)))))
 
-(defun hypertex--remove-overlay-at-point ()
-  (let ((ov (hypertex--overlay-at-point)))
+(defun calctex--remove-overlay-at-point ()
+  (let ((ov (calctex--overlay-at-point)))
     (if ov
         (delete-overlay ov)
       ())))
 
-(evil-define-text-object hypertex-atom-text-object (count)
+(evil-define-text-object calctex-atom-text-object (count)
   ""
-  (libhypertex-select-atoms (point) count (org-element-property :value (org-element-context))))
+  (libcalctex-select-atoms (point) count (org-element-property :value (org-element-context))))
 
-(defun hypertex-overlay-wrapper (body)
+(defun calctex-overlay-wrapper (body)
   (progn
     ;; Attempt the operation
     (condition-case nil
@@ -208,8 +206,8 @@
       ;; If it fails, remove the overlay at point if any
       (error (progn
                        (message "error happened!")
-                       (hypertex--remove-overlay-at-point))))
-    (let ((overlay (hypertex--overlay-at-point)))
+                       (calctex--remove-overlay-at-point))))
+    (let ((overlay (calctex--overlay-at-point)))
       (if overlay
           (progn
             (setq disable-point-adjustment t)
@@ -217,7 +215,7 @@
         (setq cursor-type t)))))
 
 ;; Create or update an overlay on every calc stack entry
-(defun hypertex--create-line-overlays ()
+(defun calctex--create-line-overlays ()
   (if (and (string= calc-language "latex")
            (string= "*Calculator*" (buffer-name)))
       (progn
@@ -225,33 +223,33 @@
         ; Skip the header line --- Emacs Calculator Mode ---
         (forward-line 1)
         (while (not (eobp))
-          (hypertex--overlay-line)
+          (calctex--overlay-line)
           (forward-line 1)))
     ()))
 
 ;; Create or update an overlay on the line at point
-(defun hypertex--overlay-line ()
+(defun calctex--overlay-line ()
   (if (string=
        "."
        (string-trim (buffer-substring
                      (line-beginning-position)
                      (line-end-position))))
       ()
-    (let* ((line-start (if hypertex--calc-line-numbering
+    (let* ((line-start (if calctex--calc-line-numbering
                            (+ (line-beginning-position) 4)
                          (line-beginning-position)))
            (line-end (line-end-position))
            (line-contents (buffer-substring line-start line-end))
-           (selected-line-contents (hypertex--lift-selection line-contents line-start line-end))
-           (ov (hypertex--get-or-create-overlay line-start line-end))
+           (selected-line-contents (calctex--lift-selection line-contents line-start line-end))
+           (ov (calctex--get-or-create-overlay line-start line-end))
            (tex (format "\\[ %s \\]" selected-line-contents)))
       (progn
         (message selected-line-contents)
         (move-overlay ov line-start line-end)
-        (hypertex--render-overlay-at tex ov))
+        (calctex--render-overlay-at tex ov))
           )))
 
-(defun hypertex--lift-selection (text line-start line-end)
+(defun calctex--lift-selection (text line-start line-end)
   (save-excursion
     (progn
       (goto-char line-start)
@@ -291,22 +289,22 @@
       ))))
 
 
-(defun hypertex-hide-overlay-at-point ()
+(defun calctex-hide-overlay-at-point ()
   (interactive)
   (let* ((overlays (overlays-at (point)))
          (overlays (seq-filter (lambda (ov)
-                                 (eq (overlay-get ov 'org-overlay-type) 'org-hypertex-overlay))
+                                 (eq (overlay-get ov 'org-overlay-type) 'org-calctex-overlay))
                                overlays)))
     (if (eq 0 (length overlays))
-        (hypertex--render-overlay-at-point)
+        (calctex--render-overlay-at-point)
       (delete-overlay (car overlays)))))
 
-(defun hypertex--remove-overlays ()
+(defun calctex--remove-overlays ()
   (with-current-buffer "*Calculator*"
     (dolist (ov (overlays-in (point-min) (point-max)))
       (delete-overlay ov))))
 
-(defun hypertex--marker-within-frag (marker frag)
+(defun calctex--marker-within-frag (marker frag)
   (if marker
       (let* ((begin (org-element-property :begin frag))
              (pt (- marker begin)))
@@ -314,7 +312,7 @@
     nil))
 
 ;; Activate all formulas for embedded mode
-(defun hypertex--activate-all ()
+(defun calctex--activate-all ()
   (interactive)
   ;; Straight out of org.el
   (let* ((math-regexp "\\$\\|\\\\[([]\\|^[ \t]*\\\\begin{[A-Za-z0-9*]+}")
@@ -326,9 +324,9 @@
         (when (memq type '(latex-environment latex-fragment))
           (calc-embedded nil))))))
 
-(defun hypertex-next-formula ()
+(defun calctex-next-formula ()
   (interactive)
-  (let* ((frag (hypertex-latex-fragment-at-point))
+  (let* ((frag (calctex-latex-fragment-at-point))
          (math-regexp "\\$\\|\\\\[([]\\|^[ \t]*\\\\begin{[A-Za-z0-9*]+}")
          )
     (progn
@@ -338,14 +336,14 @@
             (forward-char))
         ())
       (re-search-forward math-regexp (point-max) t)
-      (let* ((frag (hypertex-latex-fragment-at-point))
+      (let* ((frag (calctex-latex-fragment-at-point))
              (begin (org-element-property :begin frag)))
         (goto-char begin))
       (setq disable-point-adjustment t))))
 
-(defun hypertex-prev-formula ()
+(defun calctex-prev-formula ()
   (interactive)
-  (let* ((frag (hypertex-latex-fragment-at-point))
+  (let* ((frag (calctex-latex-fragment-at-point))
          (math-regexp "\\$\\|\\\\[([]\\|^[ \t]*\\\\begin{[A-Za-z0-9*]+}"))
     (progn
       (if frag
@@ -357,37 +355,37 @@
       (if (eq ?$ (char-after (point)))
           ;; Go backwards a character because frag-at-point doesn't work on the closing $
           (backward-char))
-      (let* ((frag (hypertex-latex-fragment-at-point))
+      (let* ((frag (calctex-latex-fragment-at-point))
              (begin (org-element-property :begin frag)))
         (goto-char begin))
       (setq disable-point-adjustment t))))
 
 ;; Activate the formula at point with calc Embedded mode.
-(defun hypertex-activate-formula ()
+(defun calctex-activate-formula ()
   (interactive)
-  (let* ((frag (hypertex-latex-fragment-at-point)))
+  (let* ((frag (calctex-latex-fragment-at-point)))
     (if frag
         (progn
           (goto-char (org-element-property :begin frag))
           ;; Set a bookmark to jump back to
           (forward-char)
-          (bookmark-set "hypertex-formula")
+          (bookmark-set "calctex-formula")
           (calc-embedded nil)
           (goto-char (org-element-property :begin frag))
-          (hypertex--render-overlay-at-point)
+          (calctex--render-overlay-at-point)
           (calc)))))
 
-(defun hypertex-accept-formula ()
+(defun calctex-accept-formula ()
   (interactive)
   (spacemacs/alternate-window)
-  (bookmark-jump "hypertex-formula")
+  (bookmark-jump "calctex-formula")
   (calc-embedded t)
-  (let ((frag (hypertex-latex-fragment-at-point)))
+  (let ((frag (calctex-latex-fragment-at-point)))
     (goto-char (org-element-property :end frag))))
 
-(defun hypertex-append-inline-formula ()
+(defun calctex-append-inline-formula ()
   (interactive)
-  (let* ((frag (hypertex-latex-fragment-at-point)))
+  (let* ((frag (calctex-latex-fragment-at-point)))
     (if frag
         (progn
           (goto-char (org-element-property :end frag))
@@ -397,47 +395,47 @@
         (calc-embedded-close-new-formula "$"))
     (progn
       (calc-embedded-new-formula)
-      (bookmark-set "hypertex-formula")
-      (hypertex--render-overlay-at-point)
+      (bookmark-set "calctex-formula")
+      (calctex--render-overlay-at-point)
       (calc))))
 
-(defun hypertex-insert-display-formula ()
+(defun calctex-insert-display-formula ()
   (interactive)
   (evil-insert-newline-below)
   (let ((calc-embedded-open-new-formula "\\[ ")
         (calc-embedded-close-new-formula " \\]"))
     (progn
       (calc-embedded-new-formula)
-      (bookmark-set "hypertex-formula")
-      (hypertex--render-overlay-at-point)
+      (bookmark-set "calctex-formula")
+      (calctex--render-overlay-at-point)
       (calc))))
 
 ;;;###autoload
-(defun turn-on-hypertex-mode ()
-  "Enable hypertex-mode in current buffer."
+(defun turn-on-calctex-mode ()
+  "Enable calctex-mode in current buffer."
   (interactive "")
-  (hypertex-mode 1))
+  (calctex-mode 1))
 
 ;;;###autoload
-(defun turn-off-hypertex-mode ()
-  "Disable hypertex-mode in current buffer."
+(defun turn-off-calctex-mode ()
+  "Disable calctex-mode in current buffer."
   (interactive "")
-  (hypertex-mode -1))
+  (calctex-mode -1))
 
-(defhydra hypertex-hydra (:color red)
+(defhydra calctex-hydra (:color red)
   "foo"
-  ("h" hypertex-hide-overlay-at-point "show/hide overlays")
-  ("n" hypertex-next-formula "next")
-  ("p" hypertex-prev-formula "prev")
-  ("r" hypertex-activate-formula "replace" :color blue)
-  ("a" hypertex-append-inline-formula "Append $formula$" :color blue)
-  ("o" hypertex-insert-display-formula "Insert \\[ display formula \\]" :color blue)
+  ("h" calctex-hide-overlay-at-point "show/hide overlays")
+  ("n" calctex-next-formula "next")
+  ("p" calctex-prev-formula "prev")
+  ("r" calctex-activate-formula "replace" :color blue)
+  ("a" calctex-append-inline-formula "Append $formula$" :color blue)
+  ("o" calctex-insert-display-formula "Insert \\[ display formula \\]" :color blue)
   ("q" nil "quit" :color blue))
 
-(define-key hypertex-mode-map (kbd "s-f") 'hypertex-hydra/body)
+(define-key calctex-mode-map (kbd "s-f") 'hypertex-hydra/body)
 
 
-(provide 'hypertex)
+(provide 'calctex)
 
 (defvar math-rewrite-for-display t)
 
