@@ -1,10 +1,21 @@
-(require 'latex)
-(require 'tex)
-(require 'libcalctex)
-
 (defvar calctex-latex-preamble
   "
 ")
+
+(defvar calctex-render-process)
+(setq calctex-render-process
+  (lambda (src)
+    (let* ((fg (calctex-latex-color :foreground))
+           (bg (calctex-latex-color :background))
+           (hash (sha1 (prin1-to-string (list src fg bg))))
+           (prefix (concat org-preview-latex-image-directory "calctex-ltximg"))
+           (absprefix (expand-file-name prefix "~/org"))
+           (tofile (format "%s_%s.png" absprefix hash))
+           (options '(:background default :foreground default)))
+      (message "%s" tofile)
+      (message "%s" src)
+      (org-create-formula-image src tofile options (current-buffer))
+      tofile)))
 
 (defvar calctex--last-overlay nil)
 (defvar calctex--last-frag nil
@@ -22,9 +33,7 @@ in our hook without depending on hook execution ordering.")
         (add-hook 'pre-command-hook 'calctex--precommand)
         (add-hook 'post-command-hook 'calctex--postcommand)
         (add-hook 'post-self-insert-hook 'calctex--postcommand)
-        (calctex-renderer-start)
         )
-    (calctex-renderer-stop)
     (remove-hook 'pre-command-hook 'calctex--precommand)
     (remove-hook 'post-command-hook 'calctex--postcommand)
     (remove-hook 'post-self-insert-hook 'calctex--postcommand)
@@ -100,19 +109,13 @@ in our hook without depending on hook execution ordering.")
          (fg (calctex-latex-color :foreground))
          (cursor-color (calctex-latex-color-format (face-background 'cursor)))
          )
-    (let ((img-file
-               (libcalctex-render-tex
-                libcalctex-renderer
-                fg
-                cursor-color
-                tex
-                "/Users/jack/org/ltximg")))
+    (let ((img-file (funcall calctex-render-process tex)))
           (progn
             (if img-file
                 (overlay-put ov
                              'display
                              (list 'image
-                                   :type 'svg
+                                   :type 'png
                                    :file img-file
                                    :ascent 'center
                                    :scale 0.34
