@@ -70,7 +70,7 @@ in our hook without depending on hook execution ordering.")
            calctex--last-overlay
            calctex--last-frag)
       (progn
-        (calctex--render-overlay-at-frag hypertex--last-frag hypertex--last-overlay)
+        (calctex--render-overlay-at-frag calctex--last-frag calctex--last-overlay)
         (setq calctex--last-overlay nil
               calctex--last-frag nil))))
 
@@ -126,23 +126,17 @@ in our hook without depending on hook execution ordering.")
 (defun calctex--render-overlay-at (tex ov)
   (let* ((fg (calctex-latex-color :foreground))
          (cursor-color (calctex-latex-color-format (face-background 'cursor)))
-         (img-file
-          (libcalctex-render-tex
-           libcalctex-renderer
-           fg
-           cursor-color
-           tex
-           "/Users/jack/org/ltximg")))
+         (img-file (funcall calctex-render-process tex)))
     (progn
       (if img-file
           (overlay-put ov
                        'display
                        (list 'image
-                             :type 'svg
+                             :type 'png
                              :file img-file
                              :ascent 'center
                              :scale 0.34
-                             :margin 2
+                             :margin 4
                              )))
       (setq disable-point-adjustment t))))
 
