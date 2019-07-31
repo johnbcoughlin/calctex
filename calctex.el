@@ -134,25 +134,8 @@ in our hook without depending on hook execution ordering.")
                ov)))))
 
 (defun calctex--render-overlay-at-frag (frag ov)
-  (let* ((tex (org-element-property :value frag))
-         (fg (calctex-latex-color :foreground))
-         (cursor-color (calctex-latex-color-format (face-background 'cursor)))
-         )
-    (let* ((img (funcall calctex-render-process tex))
-           (img-file (plist-get img 'file))
-           (img-type (plist-get img 'type)))
-      (progn
-        (if img-file
-            (overlay-put ov
-                         'display
-                         (list 'image
-                               :type img-type
-                               :file img-file
-                               :ascent 'center
-                               :scale 0.34
-                               ))
-          ())
-        (setq disable-point-adjustment t)))))
+  (let* ((tex (org-element-property :value frag)))
+    (calctex--render-overlay-at tex ov)))
 
 (defun calctex--render-overlay-at (tex ov)
   (let* ((fg (calctex-latex-color :foreground))
