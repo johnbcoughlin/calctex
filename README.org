@@ -2,7 +2,7 @@
 CalcTeX is a GNU Emacs minor mode that turns the [[https://www.gnu.org/software/emacs/manual/html_mono/calc.html][Emacs Calculator]] into a WYSIWYG
 editor for LaTeX formulas.
 
-[[file:output/animation.gif]]
+[[file:demo.gif]]
 
 ** Why a WYSIWYG equation editor?
 Much [[https://www.latex-project.org/about/][has]] [[https://www.quora.com/What-are-the-benefits-of-using-LaTeX-over-a-traditional-WYSIWYG-editor][been]] [[https://www.latex-project.org/about/][written]] about the virtues of LaTeX /not/ being a
