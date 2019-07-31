@@ -1,21 +1,25 @@
-(defvar calctex-latex-preamble
-  "
+(require 'org)
+
+(defvar calctex-render-process nil
+  "Function that renders a snippet of LaTeX source into an image.
+Will be called with SRC, the LaTeX source code. Should return a
+plist with properties 'file and 'type, representing the path to the
+rendered image and the image type.
 ")
 
-(defvar calctex-render-process)
 (setq calctex-render-process
-  (lambda (src)
-    (let* ((fg (calctex-latex-color :foreground))
-           (bg (calctex-latex-color :background))
-           (hash (sha1 (prin1-to-string (list src fg bg))))
-           (prefix (concat org-preview-latex-image-directory "calctex-ltximg"))
-           (absprefix (expand-file-name prefix "~/org"))
-           (tofile (format "%s_%s.png" absprefix hash))
-           (options '(:background default :foreground default)))
-      (message "%s" tofile)
-      (message "%s" src)
-      (org-create-formula-image src tofile options (current-buffer))
-      tofile)))
+      (lambda (src)
+        (let* ((fg (calctex-latex-color :foreground))
+               (bg (calctex-latex-color :background))
+               (hash (sha1 (prin1-to-string (list src fg bg))))
+               (prefix (concat org-preview-latex-image-directory "calctex-ltximg"))
+               (absprefix (expand-file-name prefix "~/org"))
+               (tofile (format "%s_%s.png" absprefix hash))
+               (options '(:background default :foreground default)))
+          (if (file-exists-p tofile)
+              ()
+            (org-create-formula-image src tofile options (current-buffer) 'dvipng))
+          `(file ,tofile type png))))
 
 (defvar calctex--last-overlay nil)
 (defvar calctex--last-frag nil
@@ -24,7 +28,7 @@ in our hook without depending on hook execution ordering.")
 (defvar calctex--calc-line-numbering nil)
 
 (define-minor-mode calctex-mode
-  "Toggle HyperLaTeX mode."
+  "Toggle CalcTeX mode."
   nil
   "cTX"
   :keymap (make-sparse-keymap)
@@ -109,30 +113,34 @@ in our hook without depending on hook execution ordering.")
          (fg (calctex-latex-color :foreground))
          (cursor-color (calctex-latex-color-format (face-background 'cursor)))
          )
-    (let ((img-file (funcall calctex-render-process tex)))
-          (progn
-            (if img-file
-                (overlay-put ov
-                             'display
-                             (list 'image
-                                   :type 'png
-                                   :file img-file
-                                   :ascent 'center
-                                   :scale 0.34
-                                   ))
-              ())
-            (setq disable-point-adjustment t)))))
+    (let* ((img (funcall calctex-render-process tex))
+           (img-file (plist-get img 'file))
+           (img-type (plist-get img 'type)))
+      (progn
+        (if img-file
+            (overlay-put ov
+                         'display
+                         (list 'image
+                               :type img-type
+                               :file img-file
+                               :ascent 'center
+                               :scale 0.34
+                               ))
+          ())
+        (setq disable-point-adjustment t)))))
 
 (defun calctex--render-overlay-at (tex ov)
   (let* ((fg (calctex-latex-color :foreground))
          (cursor-color (calctex-latex-color-format (face-background 'cursor)))
-         (img-file (funcall calctex-render-process tex)))
+         (img (funcall calctex-render-process tex))
+         (img-file (plist-get img 'file))
+         (img-type (plist-get img 'type)))
     (progn
       (if img-file
           (overlay-put ov
                        'display
                        (list 'image
-                             :type 'png
+                             :type img-type
                              :file img-file
                              :ascent 'center
                              :scale 0.34
