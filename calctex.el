@@ -15,11 +15,36 @@ rendered image and the image type.
                (prefix (concat org-preview-latex-image-directory "calctex-ltximg"))
                (absprefix (expand-file-name prefix "~/org"))
                (tofile (format "%s_%s.png" absprefix hash))
-               (options '(:background default :foreground default)))
+               (options '(:background default :foreground default))
+               (org-format-latex-header (calctex--org-format-latex-header)))
           (if (file-exists-p tofile)
               ()
             (org-create-formula-image src tofile options (current-buffer) 'dvipng))
           `(file ,tofile type png))))
+
+(defun calctex--org-format-latex-header ()
+  (concat org-format-latex-header "
+% Set up highlighting for simulating the cursor
+\\usepackage{xcolor}
+%\\setlength{\\fboxsep}{0pt}
+\\usepackage{soul}
+\\usepackage{adjustbox}
+
+\\usepackage{xparse}
+
+\\NewDocumentCommand{\\colornucleus}{omme{_^}}{%
+  \\begingroup\\colorlet{currcolor}{.}%
+  \\IfValueTF{#1}
+   {\\textcolor[#1]{#2}}
+   {\\textcolor{#2}}
+    {%
+     #3% the nucleus
+     \\IfValueT{#4}{_{\\textcolor{currcolor}{#4}}}% subscript
+     \\IfValueT{#5}{^{\\textcolor{currcolor}{#5}}}% superscript
+    }%
+  \\endgroup
+}
+"))
 
 (defvar calctex--last-overlay nil)
 (defvar calctex--last-frag nil
