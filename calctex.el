@@ -1,4 +1,5 @@
 (require 'org)
+(require 'subr-x)
 
 (defvar calctex-render-process nil
   "Function that renders a snippet of LaTeX source into an image.
@@ -7,24 +8,68 @@ plist with properties 'file and 'type, representing the path to the
 rendered image and the image type.
 ")
 
+(defvar calctex-latex-image-directory "~/org/ltximg/")
+(defvar calctex-dpi 400)
+
 (setq calctex-render-process
       (lambda (src)
         (let* ((fg (calctex-latex-color :foreground))
                (bg (calctex-latex-color :background))
                (hash (sha1 (prin1-to-string (list src fg bg))))
-               (prefix (concat org-preview-latex-image-directory "calctex-ltximg"))
-               (absprefix (expand-file-name prefix "~/org"))
+               (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
                (tofile (format "%s_%s.png" absprefix hash))
                (options '(:background default :foreground default))
-               (org-format-latex-header (calctex--org-format-latex-header)))
+               (latex-header calctex-format-latex-header)
+               (tmpdir temporary-file-directory)
+               (texfilebase (make-temp-name
+                             (expand-file-name "calctex_" tmpdir)))
+               (texfile (concat texfilebase ".tex"))
+               (base-name (file-name-base texfile))
+               (full-name (file-truename texfile))
+               (out-dir (or (file-name-directory texfile) "./"))
+               (dvi-output (expand-file-name (concat base-name ".dvi") out-dir))
+               )
           (if (file-exists-p tofile)
               ()
-            (org-create-formula-image src tofile options (current-buffer) 'dvipng))
+            (with-temp-file texfile
+              (insert latex-header)
+              (insert "\n\\begin{document}\n"
+                      "\\definecolor{fg}{rgb}{" fg "}\n"
+                      "\\definecolor{bg}{rgb}{" bg "}\n"
+                      "\n\\pagecolor{bg}\n"
+                      "\n{\\color{fg}\n"
+                      src
+                      "\n}\n"
+                      "\n\\end{document}\n"))
+              (let ((latex-cmd (format "latex -interaction nonstopmode -output-directory %s %s" out-dir texfile))
+                    (png-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
+                                     fg bg calctex-dpi tofile dvi-output))
+                    (log-buf (get-buffer-create "*CalcTeX Log*")))
+                (shell-command latex-cmd log-buf)
+                (shell-command latex-cmd log-buf)
+                (unless (file-exists-p dvi-output)
+                  (error "dvi output not created"))
+                (shell-command png-cmd)))
           `(file ,tofile type png))))
 
-(defun calctex--org-format-latex-header ()
-  (concat org-format-latex-header "
-% Set up highlighting for simulating the cursor
+(defvar calctex-format-latex-header
+  "
+\\documentclass{article}
+\\usepackage[usenames]{color}
+\\pagestyle{empty}             % do not remove
+% The settings below are copied from fullpage.sty
+\\setlength{\\textwidth}{\\paperwidth}
+\\addtolength{\\textwidth}{-3cm}
+\\setlength{\\oddsidemargin}{1.5cm}
+\\addtolength{\\oddsidemargin}{-2.54cm}
+\\setlength{\\evensidemargin}{\\oddsidemargin}
+\\setlength{\\textheight}{\\paperheight}
+\\addtolength{\\textheight}{-\\headheight}
+\\addtolength{\\textheight}{-\\headsep}
+\\addtolength{\\textheight}{-\\footskip}
+\\addtolength{\\textheight}{-3cm}
+\\setlength{\\topmargin}{1.5cm}
+\\addtolength{\\topmargin}{-2.54cm}% Set up highlighting for simulating the cursor
 \\usepackage{xcolor}
 %\\setlength{\\fboxsep}{0pt}
 \\usepackage{soul}
@@ -44,13 +89,15 @@ rendered image and the image type.
     }%
   \\endgroup
 }
-"))
+"
+  "docstring")
 
 (defvar calctex--last-overlay nil)
 (defvar calctex--last-frag nil
   "Sidechannel used to store the value of calc-line-numbering, so that it is usable
 in our hook without depending on hook execution ordering.")
 (defvar calctex--calc-line-numbering nil)
+(defvar calctex--calc-line-breaking)
 
 (define-minor-mode calctex-mode
   "Toggle CalcTeX mode."
@@ -62,6 +109,7 @@ in our hook without depending on hook execution ordering.")
         (add-hook 'pre-command-hook 'calctex--precommand)
         (add-hook 'post-command-hook 'calctex--postcommand)
         (add-hook 'post-self-insert-hook 'calctex--postcommand)
+        (setq calctex--calc-line-breaking calc-line-breaking)
         )
     (remove-hook 'pre-command-hook 'calctex--precommand)
     (remove-hook 'post-command-hook 'calctex--postcommand)
@@ -72,6 +120,8 @@ in our hook without depending on hook execution ordering.")
 (defun calctex--precommand ()
   (progn
     (setq calctex--calc-line-numbering calc-line-numbering)
+    (setq calctex--calc-line-breaking calc-line-breaking)
+    (setq calc-line-breaking nil)
     ))
 
 (defun calctex--postcommand ()
@@ -79,6 +129,7 @@ in our hook without depending on hook execution ordering.")
     (calctex--render-just-exited-overlay)
     ;; This function will override the variables used by the previous one
     (calctex--create-line-overlays)
+    (setq calc-line-breaking calctex--calc-line-breaking)
 ))
 
 (defun calctex--render-overlay-at-point ()
@@ -148,10 +199,11 @@ in our hook without depending on hook execution ordering.")
           (overlay-put ov
                        'display
                        (list 'image
-                             :type img-type
+                             :type 'imagemagick
+                             :format img-type
                              :file img-file
                              :ascent 'center
-                             :scale 0.34
+                             :scale 0.35
                              :margin 4
                              )))
       (setq disable-point-adjustment t))))
@@ -172,7 +224,7 @@ in our hook without depending on hook execution ordering.")
          (parent-dir (if (or (not file) (file-remote-p file))
                   temporary-file-directory
                   default-directory))
-         (dir (concat parent-dir org-preview-latex-image-directory))
+         (dir (concat parent-dir calctex-latex-image-directory))
          (img_file (concat dir (format "org-ltximg_%s.png" id))))
     img_file))
 
@@ -194,10 +246,6 @@ in our hook without depending on hook execution ordering.")
     (if ov
         (delete-overlay ov)
       ())))
-
-(evil-define-text-object calctex-atom-text-object (count)
-  ""
-  (libcalctex-select-atoms (point) count (org-element-property :value (org-element-context))))
 
 (defun calctex-overlay-wrapper (body)
   (progn
@@ -245,7 +293,6 @@ in our hook without depending on hook execution ordering.")
            (ov (calctex--get-or-create-overlay line-start line-end))
            (tex (format "\\[ %s \\]" selected-line-contents)))
       (progn
-        (message selected-line-contents)
         (move-overlay ov line-start line-end)
         (calctex--render-overlay-at tex ov))
           )))
@@ -423,15 +470,16 @@ in our hook without depending on hook execution ordering.")
   (interactive "")
   (calctex-mode -1))
 
-(defhydra calctex-hydra (:color red)
-  "foo"
-  ("h" calctex-hide-overlay-at-point "show/hide overlays")
-  ("n" calctex-next-formula "next")
-  ("p" calctex-prev-formula "prev")
-  ("r" calctex-activate-formula "replace" :color blue)
-  ("a" calctex-append-inline-formula "Append $formula$" :color blue)
-  ("o" calctex-insert-display-formula "Insert \\[ display formula \\]" :color blue)
-  ("q" nil "quit" :color blue))
+(with-eval-after-load 'hydra 
+  (defhydra calctex-hydra (:color red)
+    "foo"
+    ("h" calctex-hide-overlay-at-point "show/hide overlays")
+    ("n" calctex-next-formula "next")
+    ("p" calctex-prev-formula "prev")
+    ("r" calctex-activate-formula "replace" :color blue)
+    ("a" calctex-append-inline-formula "Append $formula$" :color blue)
+    ("o" calctex-insert-display-formula "Insert \\[ display formula \\]" :color blue)
+    ("q" nil "quit" :color blue)))
 
 (define-key calctex-mode-map (kbd "s-f") 'hypertex-hydra/body)
 
