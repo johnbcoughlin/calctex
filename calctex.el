@@ -129,13 +129,6 @@ in our hook without depending on hook execution ordering.")
     (setq calc-line-breaking calctex--calc-line-breaking)
 ))
 
-(defun calctex--modification-hook (ov after beg end &optional len)
-  (condition-case nil
-      (calctex--render-overlay-at-point)
-    (error (progn
-             (message "error happened!")
-             (calctex--remove-overlay-at-point)))))
-
 (defun calctex--get-or-create-overlay (beg end)
   (let* ((overlays (cl-remove-if-not
                     (lambda (o) (eq (overlay-get o 'calctex-overlay-type) 'calctex-overlay))
@@ -147,7 +140,6 @@ in our hook without depending on hook execution ordering.")
         (progn (overlay-put ov 'calctex-overlay-type 'calctex-overlay)
                (overlay-put ov 'priority -60)
                (overlay-put ov 'evaporate t)
-               (overlay-put ov 'modification-hooks (list 'calctex--modification-hook))
                (overlay-put ov 'calctex-overlay-id (sha1 (buffer-substring beg end)))
                ov)))))
 
@@ -191,6 +183,11 @@ in our hook without depending on hook execution ordering.")
     (if ov
         (delete-overlay ov)
       ())))
+
+(defun calctex--overlay-at-point ()
+  (car (cl-remove-if-not
+        (lambda (o) (eq (overlay-get o 'calctex-overlay-type) 'calctex-overlay))
+        (overlays-at (point)))))
 
 ;; Create or update an overlay on every calc stack entry
 (defun calctex--create-line-overlays ()
