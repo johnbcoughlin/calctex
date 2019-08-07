@@ -44,11 +44,13 @@ rendered image and the image type.
                     (png-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
                                      fg bg calctex-dpi tofile dvi-output))
                     (log-buf (get-buffer-create "*CalcTeX Log*")))
-                (shell-command latex-cmd log-buf)
-                (shell-command latex-cmd log-buf)
-                (unless (file-exists-p dvi-output)
-                  (error "dvi output not created"))
-                (shell-command png-cmd)))
+                (save-window-excursion 
+                  (shell-command latex-cmd log-buf)
+                  (shell-command latex-cmd log-buf)
+                  (unless (file-exists-p dvi-output)
+                    (error "dvi output not created"))
+                  (shell-command png-cmd log-buf))
+                ))
           `(file ,tofile type png))))
 
 (defvar calctex-format-latex-header
