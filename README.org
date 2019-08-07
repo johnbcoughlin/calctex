@@ -45,3 +45,9 @@ WYSIWYG equation editors typically provide large menus of clickable buttons.
 A more powerful, Emacs-y alternative is key commands. CalcTeX is a display mode
 for Emacs Calc, which provides a huge number of key commands for manipulating
 equations.
+
+* Usage
+To fire up calc, invoke `M-x calc`, or `C-x * c`. `calctex-mode` will toggle the minor mode in the calc buffer. Change the calc [[https://www.gnu.org/software/emacs/manual//html_node/calc/Language-Modes.html#Language-Modes][language mode]] to LaTeX with `d L`.
+
+** Integrating with documents
+CalcTeX is designed to be used in conjunction with calc's [[https://www.gnu.org/software/emacs/manual//html_node/calc/Embedded-Mode.html#Embedded-Mode][Embedded Mode]]. In a LaTeX or Org buffer, move point to a LaTeX formula environment, and type `C-x * e` to invoke embedded mode. This will couple the top of the calc stack to the contents of the equation in the buffer you are editing.
