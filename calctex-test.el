@@ -54,6 +54,14 @@
      (calctex-mode -1)
      (assert-no-overlays))))
 
+(ert-deftest test-starting-out-of-latex-doesnt-overlay ()
+  (with-calc-test-harness
+   (lambda ()
+     (calctex-mode 1)
+     (execute-kbd-macro (kbd "' a <RET>"))
+     (execute-kbd-macro (kbd "2 <RET> *"))
+     (assert-no-overlays))))
+
 (ert-deftest test-switching-language-mode-hides-overlays ()
   (with-calc-test-harness
    (lambda ()
@@ -63,5 +71,17 @@
      (execute-kbd-macro (kbd "2 <RET> *"))
      (execute-kbd-macro (kbd "d N"))
      (assert-no-overlays))))
+
+(ert-deftest test-multiple-overlays ()
+  (with-calc-test-harness
+   (lambda ()
+     (calctex-mode 1)
+     (execute-kbd-macro (kbd "d L"))
+     (execute-kbd-macro (kbd "' a <RET>"))
+     (execute-kbd-macro (kbd "2 <RET> *"))
+     (execute-kbd-macro (kbd "<RET>"))
+     (execute-kbd-macro (kbd "2 <RET> *"))
+     (assert-nth-overlay-equals 0 "resources/2a.png" 'png)
+     (assert-nth-overlay-equals 1 "resources/4a.png" 'png))))
 
 (provide 'calctex-test)
