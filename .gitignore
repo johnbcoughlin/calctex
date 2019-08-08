@@ -1,3 +1,5 @@
 /.DS_Store
 demos/output/*
 *.mov
+ltximg/*
+/demos/.DS_Store
