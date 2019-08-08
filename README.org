@@ -48,21 +48,32 @@ equations.
 
 * Installation
 ** External Binaries
-Ensure that you have both the `latex` and `dvipng` ([[https://ctan.org/pkg/dvipng?lang=en][dvipng]]) binaries installed and on your `$PATH`. The [[https://www.tug.org/texlive/][TeXLive]] distribution ships with both binaries.
+Ensure that you have both the ~latex~ and ~dvipng~ ([[https://ctan.org/pkg/dvipng?lang=en][dvipng]]) binaries installed
+and on your ~$PATH~. The [[https://www.tug.org/texlive/][TeXLive]] distribution ships with both binaries.
 ** LaTeX Packages
-CalcTeX makes use of a few LaTeX packages. To run CalcTeX with the default settings, make sure that you have the following LaTeX packages installed:
-- xparse
-- xcolor
-- soul
+CalcTeX makes use of a few LaTeX packages. To run CalcTeX with the default
+settings, make sure that you have the following LaTeX packages installed:
+- ~xparse~
+- ~xcolor~
+- ~soul~
 
-Alternatively, you can modify the value of the `calctex-format-latex-header` variable:
-```
+Alternatively, you can modify the value of the ~calctex-format-latex-header~ 
+variable:
+
+#+begin_src elisp
 (setq calctex-format-latex-header "...")
-```
-However, be aware that doing so may compromise some facilities of CalcTeX, particularly its selection handling.
+#+end_src
+
+However, be aware that doing so may compromise some facilities of CalcTeX,
+particularly its selection handling.
 
 * Usage
-To fire up calc, invoke `M-x calc`, or `C-x * c`. `calctex-mode` will toggle the minor mode in the calc buffer. Change the calc [[https://www.gnu.org/software/emacs/manual//html_node/calc/Language-Modes.html#Language-Modes][language mode]] to LaTeX with `d L`.
+To fire up calc, invoke ~M-x calc~, or ~C-x * c~. ~calctex-mode~ will toggle the
+minor mode in the calc buffer. Change the calc [[https://www.gnu.org/software/emacs/manual//html_node/calc/Language-Modes.html#Language-Modes][language mode]] to LaTeX with 
+~d L~.
 
 ** Integrating with documents
-CalcTeX is designed to be used in conjunction with calc's [[https://www.gnu.org/software/emacs/manual//html_node/calc/Embedded-Mode.html#Embedded-Mode][Embedded Mode]]. In a LaTeX or Org buffer, move point to a LaTeX formula environment, and type `C-x * e` to invoke embedded mode. This will couple the top of the calc stack to the contents of the equation in the buffer you are editing.
+CalcTeX is designed to be used in conjunction with calc's [[https://www.gnu.org/software/emacs/manual//html_node/calc/Embedded-Mode.html#Embedded-Mode][Embedded Mode]]. In a
+LaTeX or Org buffer, move point to a LaTeX formula environment, and type 
+~C-x * e~ to invoke embedded mode. This will couple the top of the calc stack to the
+contents of the equation in the buffer you are editing.
