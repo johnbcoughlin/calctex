@@ -3,3 +3,5 @@ demos/output/*
 *.mov
 ltximg/*
 /demos/.DS_Store
+/macos_install.sh
+/latex_install.sh

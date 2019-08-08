@@ -1,0 +1,23 @@
+os: osx
+osx_image: xcode11
+
+cache:
+  directories:
+    - $HOME/Library/Caches/Homebrew
+    - /usr/local/Cellar/emacs
+
+addons:
+  homebrew:
+    update: true
+    packages:
+    - emacs
+
+# The install script should be idempotent, so run it twice
+install:
+  - ./install.sh
+  - ./install.sh
+
+script: echo "test test"
+
+before_cache:
+  - brew cleanup
