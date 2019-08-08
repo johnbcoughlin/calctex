@@ -69,8 +69,9 @@ particularly its selection handling.
 
 * Usage
 To fire up calc, invoke ~M-x calc~, or ~C-x * c~. ~calctex-mode~ will toggle the
-minor mode in the calc buffer. Change the calc [[https://www.gnu.org/software/emacs/manual//html_node/calc/Language-Modes.html#Language-Modes][language mode]] to LaTeX with 
-~d L~.
+minor mode in the calc buffer. You can type ~'~ for Algebraic entry mode, or
+type a numeral to begin a numeric entry. Refer to the [[https://www.gnu.org/software/emacs/manual/html_mono/calc.html][Calc manual]] for the many
+mathematical commands that are available.
 
 ** Integrating with documents
 CalcTeX is designed to be used in conjunction with calc's [[https://www.gnu.org/software/emacs/manual//html_node/calc/Embedded-Mode.html#Embedded-Mode][Embedded Mode]]. In a
