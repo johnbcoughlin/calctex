@@ -1,18 +1,18 @@
 
 # Table of Contents
 
-1.  [CalcTeX](#org417a215)
-    1.  [Why a WYSIWYG equation editor?](#org4a9fcbb)
-        1.  [A Tool of Thought](#org2384c6d)
-        2.  [No clicking](#org59e6298)
-2.  [Installation](#orgbcdc9ed)
-    1.  [External Binaries](#org90b33de)
-    2.  [LaTeX Packages](#org6ef88a0)
-3.  [Usage](#org326a11c)
-    1.  [Integrating with documents](#orgad33891)
+1.  [CalcTeX](#org3347d73)
+    1.  [Why a WYSIWYG equation editor?](#orgc240bf2)
+        1.  [A Tool of Thought](#org0320408)
+        2.  [No clicking](#org59d639b)
+2.  [Installation](#org6a6417e)
+    1.  [MacOS](#org6713bf6)
+    2.  [LaTeX Packages](#org992bead)
+3.  [Usage](#org8fe5b2e)
+    1.  [Integrating with documents](#orgee4df5d)
 
 
-<a id="org417a215"></a>
+<a id="org3347d73"></a>
 
 # CalcTeX
 
@@ -22,7 +22,7 @@ editor for LaTeX formulas.
 ![img](demos/normal.gif)
 
 
-<a id="org4a9fcbb"></a>
+<a id="orgc240bf2"></a>
 
 ## Why a WYSIWYG equation editor?
 
@@ -50,7 +50,7 @@ where you are in the formula, alert you to any mistakes, or provide opportunity
 for reflecting on the content of what you're typing.
 
 
-<a id="org2384c6d"></a>
+<a id="org0320408"></a>
 
 ### A Tool of Thought
 
@@ -60,7 +60,7 @@ the computer, we deserve an editor that **augments** the tool of mathematical
 notation, not one that suffocates it.
 
 
-<a id="org59e6298"></a>
+<a id="org59d639b"></a>
 
 ### No clicking
 
@@ -70,29 +70,47 @@ for Emacs Calc, which provides a huge number of key commands for manipulating
 equations.
 
 
-<a id="orgbcdc9ed"></a>
+<a id="org6a6417e"></a>
 
 # Installation
 
 
-<a id="org90b33de"></a>
+<a id="org6713bf6"></a>
 
-## External Binaries
+## MacOS
 
-Ensure that you have both the `latex` and `dvipng` ([dvipng](https://ctan.org/pkg/dvipng?lang=en)) binaries installed
-and on your `$PATH`. The [TeXLive](https://www.tug.org/texlive/) distribution ships with both binaries.
+Ensure that you have the `latex` and `tlmgr` binaries installed and on
+your `$PATH`. The easiest way to install them is via the BasicTeX version of the
+TeXLive distribution, which installs all the binaries but omits 2.5GB of CTAN
+packages:
+
+    brew cask install basictex
+    export PATH=/Library/TeX/texbin:$PATH
+    
+    latex -version
+    tlmgr -version
 
 
-<a id="org6ef88a0"></a>
+<a id="org992bead"></a>
 
 ## LaTeX Packages
 
 CalcTeX makes use of a few LaTeX packages. To run CalcTeX with the default
 settings, make sure that you have the following LaTeX packages installed:
 
+-   `dvipng`
 -   `xparse`
 -   `xcolor`
 -   `soul`
+
+If you are using TeXLive, you can install these with `tlmgr`:
+
+    sudo tlmgr update --self
+    sudo tlmgr install dvipng l3packages xcolor soul
+
+You should now be able to run
+
+    dvipng -version
 
 Alternatively, you can modify the value of the `calctex-format-latex-header` 
 variable:
@@ -103,16 +121,17 @@ However, be aware that doing so may compromise some facilities of CalcTeX,
 particularly its selection handling.
 
 
-<a id="org326a11c"></a>
+<a id="org8fe5b2e"></a>
 
 # Usage
 
 To fire up calc, invoke `M-x calc`, or `C-x * c`. `calctex-mode` will toggle the
-minor mode in the calc buffer. Change the calc [language mode](https://www.gnu.org/software/emacs/manual//html_node/calc/Language-Modes.html#Language-Modes) to LaTeX with 
-`d L`.
+minor mode in the calc buffer. You can type `'` for Algebraic entry mode, or
+type a numeral to begin a numeric entry. Refer to the [Calc manual](https://www.gnu.org/software/emacs/manual/html_mono/calc.html) for the many
+mathematical commands that are available.
 
 
-<a id="orgad33891"></a>
+<a id="orgee4df5d"></a>
 
 ## Integrating with documents
 

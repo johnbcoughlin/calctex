@@ -47,15 +47,49 @@ for Emacs Calc, which provides a huge number of key commands for manipulating
 equations.
 
 * Installation
-** External Binaries
-Ensure that you have both the ~latex~ and ~dvipng~ ([[https://ctan.org/pkg/dvipng?lang=en][dvipng]]) binaries installed
-and on your ~$PATH~. The [[https://www.tug.org/texlive/][TeXLive]] distribution ships with both binaries.
+** MacOS
+#+begin_src bash :tangle macos_install.sh :exports none
+#!/bin/bash
+#+end_src
+
+Ensure that you have the ~latex~ and ~tlmgr~ binaries installed and on
+your ~$PATH~. The easiest way to install them is via the BasicTeX version of the
+TeXLive distribution, which installs all the binaries but omits 2.5GB of CTAN
+packages:
+
+#+begin_src bash :tangle macos_install.sh
+brew cask install basictex
+export PATH=/Library/TeX/texbin:$PATH
+
+latex -version
+tlmgr -version
+#+end_src
+
 ** LaTeX Packages
+#+begin_src bash :tangle latex_install.sh :exports none
+#!/bin/bash
+export PATH=/Library/TeX/texbin:$PATH
+#+end_src
+
 CalcTeX makes use of a few LaTeX packages. To run CalcTeX with the default
 settings, make sure that you have the following LaTeX packages installed:
+- ~dvipng~
 - ~xparse~
 - ~xcolor~
 - ~soul~
+
+If you are using TeXLive, you can install these with ~tlmgr~:
+
+#+begin_src bash :tangle latex_install.sh
+sudo tlmgr update --self
+sudo tlmgr install dvipng l3packages xcolor soul
+#+end_src
+
+You should now be able to run
+
+#+begin_src bash :tangle latex_install.sh
+dvipng -version
+#+end_src
 
 Alternatively, you can modify the value of the ~calctex-format-latex-header~ 
 variable:
