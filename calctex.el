@@ -1,4 +1,5 @@
 (require 'subr-x)
+(require 'calc-sel)
 
 (defvar calctex-render-process nil
   "Function that renders a snippet of LaTeX source into an image.
