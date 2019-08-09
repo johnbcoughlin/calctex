@@ -52,8 +52,11 @@ rendered image and the image type.
                   (shell-command latex-cmd log-buf)
                   (shell-command latex-cmd log-buf)
                   (unless (file-exists-p dvi-output)
-                    (error "dvi output not created"))
-                  (shell-command png-cmd log-buf))
+                    (error "Error rendering latex to dvi. Check *CalcTeX Log* for command output"))
+                  (shell-command png-cmd log-buf)
+                  (unless (file-exists-p dvi-output)
+                    (error "Error converting dvi to png. Check *CalcTeX Log* for command output"))
+                  )
                 ))
           `(file ,tofile type png))))
 
