@@ -12,13 +12,21 @@
 
 (defun assert-nth-overlay-equals (n reference-image type)
   (let* ((ovs (overlays-in (point-min) (point-max)))
-         (ov (nth n ovs))
-         (disp (overlay-get ov 'display))
-         (file (plist-get (cdr disp) :file))
-         (format (plist-get (cdr disp) :format))
-         (equality (shell-command (format "cmp %s %s" file reference-image))))
-    (should (= equality 0))
-    (should (equal format type))))
+         (ov (nth n ovs)))
+    (if ov
+        (let* ((disp (overlay-get ov 'display))
+               (file (plist-get (cdr disp) :file))
+               (format (plist-get (cdr disp) :format))
+               (equality (shell-command (format "cmp %s %s" file reference-image))))
+          (should (= equality 0))
+          (should (equal format type)))
+      (message "
+==========Render error output:==========
+%s
+
+========================================
+" (with-current-buffer "*CalcTeX Log*"
+                      (buffer-string))))))
 
 (defun assert-no-overlays ()
   (let* ((ovs (overlays-in (point-min) (point-max))))
