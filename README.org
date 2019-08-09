@@ -59,8 +59,19 @@ packages:
 
 #+begin_src bash :tangle macos_install.sh
 brew cask install basictex
-export PATH=/Library/TeX/texbin:$PATH
+#+end_src
 
+#+begin_src bash :tangle macos_env.sh :exports none
+export PATH=/Library/TeX/texbin:$PATH
+#+end_src
+
+#+begin_src bash :tangle macos_install.sh :exports none
+source macos_env.sh
+#+end_src
+
+You'll need to reload your shell to get the TeXLive binaries on your ~PATH~.
+Check that you have them installed:
+#+begin_src bash :tangle macos_install.sh
 latex -version
 tlmgr -version
 #+end_src
@@ -68,7 +79,7 @@ tlmgr -version
 ** LaTeX Packages
 #+begin_src bash :tangle latex_install.sh :exports none
 #!/bin/bash
-export PATH=/Library/TeX/texbin:$PATH
+source env.sh
 #+end_src
 
 CalcTeX makes use of a few LaTeX packages. To run CalcTeX with the default
@@ -77,12 +88,14 @@ settings, make sure that you have the following LaTeX packages installed:
 - ~xparse~
 - ~xcolor~
 - ~soul~
+- ~adjustbox~
+- ~collectbox~
 
 If you are using TeXLive, you can install these with ~tlmgr~:
 
 #+begin_src bash :tangle latex_install.sh
 sudo tlmgr update --self
-sudo tlmgr install dvipng l3packages xcolor soul
+sudo tlmgr install dvipng l3packages xcolor soul adjustbox collectbox
 #+end_src
 
 You should now be able to run

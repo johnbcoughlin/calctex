@@ -1,18 +1,18 @@
 
 # Table of Contents
 
-1.  [CalcTeX](#org3347d73)
-    1.  [Why a WYSIWYG equation editor?](#orgc240bf2)
-        1.  [A Tool of Thought](#org0320408)
-        2.  [No clicking](#org59d639b)
-2.  [Installation](#org6a6417e)
-    1.  [MacOS](#org6713bf6)
-    2.  [LaTeX Packages](#org992bead)
-3.  [Usage](#org8fe5b2e)
-    1.  [Integrating with documents](#orgee4df5d)
+1.  [CalcTeX](#orge32d08f)
+    1.  [Why a WYSIWYG equation editor?](#org3a0cb50)
+        1.  [A Tool of Thought](#org3bee02e)
+        2.  [No clicking](#org687b4db)
+2.  [Installation](#org2441786)
+    1.  [MacOS](#org1b34765)
+    2.  [LaTeX Packages](#org1775e00)
+3.  [Usage](#orge39940d)
+    1.  [Integrating with documents](#org5d9b098)
 
 
-<a id="org3347d73"></a>
+<a id="orge32d08f"></a>
 
 # CalcTeX
 
@@ -22,7 +22,7 @@ editor for LaTeX formulas.
 ![img](demos/normal.gif)
 
 
-<a id="orgc240bf2"></a>
+<a id="org3a0cb50"></a>
 
 ## Why a WYSIWYG equation editor?
 
@@ -50,7 +50,7 @@ where you are in the formula, alert you to any mistakes, or provide opportunity
 for reflecting on the content of what you're typing.
 
 
-<a id="org0320408"></a>
+<a id="org3bee02e"></a>
 
 ### A Tool of Thought
 
@@ -60,7 +60,7 @@ the computer, we deserve an editor that **augments** the tool of mathematical
 notation, not one that suffocates it.
 
 
-<a id="org59d639b"></a>
+<a id="org687b4db"></a>
 
 ### No clicking
 
@@ -70,12 +70,12 @@ for Emacs Calc, which provides a huge number of key commands for manipulating
 equations.
 
 
-<a id="org6a6417e"></a>
+<a id="org2441786"></a>
 
 # Installation
 
 
-<a id="org6713bf6"></a>
+<a id="org1b34765"></a>
 
 ## MacOS
 
@@ -85,13 +85,15 @@ TeXLive distribution, which installs all the binaries but omits 2.5GB of CTAN
 packages:
 
     brew cask install basictex
-    export PATH=/Library/TeX/texbin:$PATH
-    
+
+You'll need to reload your shell to get the TeXLive binaries on your `PATH`.
+Check that you have them installed:
+
     latex -version
     tlmgr -version
 
 
-<a id="org992bead"></a>
+<a id="org1775e00"></a>
 
 ## LaTeX Packages
 
@@ -102,11 +104,13 @@ settings, make sure that you have the following LaTeX packages installed:
 -   `xparse`
 -   `xcolor`
 -   `soul`
+-   `adjustbox`
+-   `collectbox`
 
 If you are using TeXLive, you can install these with `tlmgr`:
 
     sudo tlmgr update --self
-    sudo tlmgr install dvipng l3packages xcolor soul
+    sudo tlmgr install dvipng l3packages xcolor soul adjustbox collectbox
 
 You should now be able to run
 
@@ -121,7 +125,7 @@ However, be aware that doing so may compromise some facilities of CalcTeX,
 particularly its selection handling.
 
 
-<a id="org8fe5b2e"></a>
+<a id="orge39940d"></a>
 
 # Usage
 
@@ -131,7 +135,7 @@ type a numeral to begin a numeric entry. Refer to the [Calc manual](https://www.
 mathematical commands that are available.
 
 
-<a id="orgee4df5d"></a>
+<a id="org5d9b098"></a>
 
 ## Integrating with documents
 
