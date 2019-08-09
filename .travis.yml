@@ -17,7 +17,10 @@ install:
   - ./install.sh
   - ./install.sh
 
-script: echo "test test"
+before_script:
+  - source env.sh
+
+script: make test
 
 before_cache:
   - brew cleanup
