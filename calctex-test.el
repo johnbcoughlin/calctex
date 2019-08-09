@@ -79,4 +79,13 @@
      (assert-nth-overlay-equals 0 "resources/2a.png" 'png)
      (assert-nth-overlay-equals 1 "resources/4a.png" 'png))))
 
+(ert-deftest creates-parents-of-image-cache ()
+  (with-calc-test-harness
+   (lambda ()
+     (setq calctex-latex-image-directory "~/foo/bar/calctex")
+     (calctex-mode 1)
+     (execute-kbd-macro (kbd "' a <RET>"))
+     (execute-kbd-macro (kbd "2 <RET> *"))
+     (assert-nth-overlay-equals 0 "resources/2a.png" 'png))))
+
 (provide 'calctex-test)
