@@ -15,7 +15,7 @@ rendered image and the image type.
       (lambda (src)
         (if (file-exists-p calctex-latex-image-directory)
             ()
-          (make-directory calctex-latex-image-directory))
+          (make-directory calctex-latex-image-directory 'parents))
         (let* ((fg (calctex-latex-color :foreground))
                (bg (calctex-latex-color :background))
                (hash (sha1 (prin1-to-string (list src fg bg))))
