@@ -105,6 +105,7 @@ rendered image and the image type.
   "Sidechannel used to store the value of calc-line-numbering, so that it is usable
 in our hook without depending on hook execution ordering.")
 (defvar calctex--calc-line-breaking)
+(defvar calctex--calc-highlight-selections-with-faces)
 
 (define-minor-mode calctex-mode
   "Toggle CalcTeX mode."
@@ -117,12 +118,15 @@ in our hook without depending on hook execution ordering.")
         (add-hook 'post-command-hook 'calctex--postcommand)
         (add-hook 'post-self-insert-hook 'calctex--postcommand)
         (setq calctex--calc-line-breaking calc-line-breaking)
+        (setq calctex--calc-highlight-selections-with-faces calc-highlight-selections-with-faces)
+        (setq calc-highlight-selections-with-faces t)
         (calc-show-selections -1)
         (calc-latex-language nil)
         )
     (remove-hook 'pre-command-hook 'calctex--precommand)
     (remove-hook 'post-command-hook 'calctex--postcommand)
     (remove-hook 'post-self-insert-hook 'calctex--postcommand)
+    (setq calc-highlight-selections-with-faces calctex--calc-highlight-selections-with-faces)
     (calctex--remove-overlays)
     ))
 
