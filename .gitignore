@@ -5,3 +5,7 @@ ltximg/*
 /demos/.DS_Store
 /macos_install.sh
 /latex_install.sh
+*.aux
+resources/*.png
+resources/*.log
+*.DS_Store

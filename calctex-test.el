@@ -4,7 +4,7 @@
   (calc)
   (calc-reset 0)
   (with-current-buffer "*Calculator*"
-    (set-face-attribute 'default nil :foreground "dark red" :background "navajo white")
+    (set-face-attribute 'default nil :foreground "black" :background "white")
     (let* ((tempdir-name (make-temp-name temporary-file-directory))
            (calctex-latex-image-directory tempdir-name))
       (make-directory calctex-latex-image-directory)
