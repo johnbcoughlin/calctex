@@ -9,7 +9,23 @@ rendered image and the image type.
 ")
 
 (defvar calctex-latex-image-directory "~/calctex/")
-(defvar calctex-dpi 400)
+
+(defvar calctex-base-dpi 150
+  "The base dots-per-inch measurement to use for png rendering.
+A higher value will give sharper images")
+
+(defvar calctex-imagemagick-png-scaling 0.35
+  "The amount to scale a PNG image *down* by. This is to compensate
+for the image size change from a higher value of calctex-base-dpi")
+
+(defvar calctex-imagemagick-enabledp t
+  "Whether imagemagick image display should be used, if this emacs
+has been compiled with support for it.
+
+Note that imagemagick is required to scale rendered images *down*.
+Downscaling allows calctex to render images at a higher DPI without
+blowing up the display size in the buffer. If this is enabled, then,
+rendered images may appear grainy on some displays.")
 
 (setq calctex-render-process
       (lambda (src)
@@ -18,7 +34,7 @@ rendered image and the image type.
           (make-directory calctex-latex-image-directory 'parents))
         (let* ((fg (calctex-latex-color :foreground))
                (bg (calctex-latex-color :background))
-               (hash (sha1 (prin1-to-string (list src fg bg))))
+               (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
                (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
                (tofile (format "%s_%s.png" absprefix hash))
                (options '(:background default :foreground default))
@@ -46,15 +62,16 @@ rendered image and the image type.
                       "\n\\end{document}\n"))
               (let ((latex-cmd (format "latex -interaction nonstopmode -output-directory %s %s" out-dir texfile))
                     (png-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
-                                     fg bg calctex-dpi tofile dvi-output))
+                                     fg bg (calctex--dpi) tofile dvi-output))
                     (log-buf (get-buffer-create "*CalcTeX Log*")))
                 (save-window-excursion 
-                  (shell-command latex-cmd log-buf)
+                  (message "%s" latex-cmd)
                   (shell-command latex-cmd log-buf)
                   (unless (file-exists-p dvi-output)
                     (error "Error rendering latex to dvi. Check *CalcTeX Log* for command output"))
+                  (message "%s" png-cmd)
                   (shell-command png-cmd log-buf)
-                  (unless (file-exists-p dvi-output)
+                  (unless (file-exists-p tofile)
                     (error "Error converting dvi to png. Check *CalcTeX Log* for command output"))
                   )
                 ))
@@ -166,17 +183,35 @@ in our hook without depending on hook execution ordering.")
          (img-type (plist-get img 'type)))
     (progn
       (if img-file
-          (overlay-put ov
-                       'display
-                       (list 'image
-                             :type 'imagemagick
-                             :format img-type
-                             :file img-file
-                             :ascent 'center
-                             :scale 0.35
-                             :margin 4
-                             )))
+          (overlay-put
+           ov
+           'display
+           (calctex--image-overlay-display img-type img-file)))
       (setq disable-point-adjustment t))))
+
+(defun calctex--image-overlay-display (img-type img-file)
+  (if (calctex--imagemagick-support)
+      (list 'image
+            :type 'imagemagick
+            :format img-type
+            :file img-file
+            :ascent 'center
+            :scale calctex-imagemagick-png-scaling
+            :margin 4)
+    (list 'image
+          :type img-type
+          :file img-file
+          :ascent 'center
+          :margin 4)))
+
+(defun calctex--imagemagick-support ()
+  (and (image-type-available-p 'imagemagick) calctex-imagemagick-enabledp))
+
+(defun calctex--dpi ()
+  "Compute the render DPI to request from dvipng."
+  (if (calctex--imagemagick-support)
+      (round (/ calctex-base-dpi calctex-imagemagick-png-scaling))
+    calctex-base-dpi))
 
 (defun calctex-latex-color (attr)
   "Return a RGB color for the LaTeX color package."
