@@ -1,3 +1,5 @@
+;; -*- lexical-binding: t; -*-
+
 (require 'calctex)
 
 (defun with-calc-test-harness (body)
