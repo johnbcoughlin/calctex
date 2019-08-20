@@ -1,4 +1,16 @@
-;; -*- lexical-binding: t; -*-
+;;; calctex.el --- WYSIWYG LaTeX equation editing with calc.el -*- lexical-binding: t; -*-
+
+;; Author: Jack Coughlin <jack@johnbcoughlin.com>
+;; URL: https://github.com/johnbcoughlin/calctex
+;; Package-Version: 0.1
+;; Package-Requires: ((emacs "24.4"))
+
+;;; Commentary:
+
+;; CalcTeX is an Emacs minor mode that turns the built-in Emacs calculator into
+;; a symbolic equation editor.
+
+;;; Code:
 
 (require 'subr-x)
 (require 'calc-sel)
@@ -7,8 +19,7 @@
   "Function that renders a snippet of LaTeX source into an image.
 Will be called with SRC, the LaTeX source code. Should return a
 plist with properties 'file and 'type, representing the path to the
-rendered image and the image type.
-")
+rendered image and the image type.")
 
 (defvar calctex-latex-image-directory "~/calctex/")
 
@@ -17,67 +28,22 @@ rendered image and the image type.
 A higher value will give sharper images")
 
 (defvar calctex-imagemagick-png-scaling 0.35
-  "The amount to scale a PNG image *down* by. This is to compensate
-for the image size change from a higher value of calctex-base-dpi")
+  "Controls the amount to scale a PNG image *down* by.
+
+This is to compensate for the image size change from a higher
+value of calctex-base-dpi")
 
 (defvar calctex-imagemagick-enabledp t
-  "Whether imagemagick image display should be used, if this emacs
-has been compiled with support for it.
+  "Whether imagemagick image display should be used.
 
-Note that imagemagick is required to scale rendered images *down*.
-Downscaling allows calctex to render images at a higher DPI without
-blowing up the display size in the buffer. If this is enabled, then,
-rendered images may appear grainy on some displays.")
+If Emacs has not been compiled with imagemagick support, this
+variable will have no effect.
 
-(setq calctex-render-process
-      (lambda (src)
-        (if (file-exists-p calctex-latex-image-directory)
-            ()
-          (make-directory calctex-latex-image-directory 'parents))
-        (let* ((fg (calctex-latex-color :foreground))
-               (bg (calctex-latex-color :background))
-               (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
-               (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
-               (tofile (format "%s_%s.png" absprefix hash))
-               (options '(:background default :foreground default))
-               (latex-header calctex-format-latex-header)
-               (tmpdir temporary-file-directory)
-               (texfilebase (make-temp-name
-                             (expand-file-name "calctex_" tmpdir)))
-               (texfile (concat texfilebase ".tex"))
-               (base-name (file-name-base texfile))
-               (full-name (file-truename texfile))
-               (out-dir (or (file-name-directory texfile) "./"))
-               (dvi-output (expand-file-name (concat base-name ".dvi") out-dir))
-               )
-          (if (file-exists-p tofile)
-              ()
-            (with-temp-file texfile
-              (insert latex-header)
-              (insert "\n\\begin{document}\n"
-                      "\\definecolor{fg}{rgb}{" fg "}\n"
-                      "\\definecolor{bg}{rgb}{" bg "}\n"
-                      "\n\\pagecolor{bg}\n"
-                      "\n{\\color{fg}\n"
-                      src
-                      "\n}\n"
-                      "\n\\end{document}\n"))
-              (let ((latex-cmd (format "latex -interaction nonstopmode -output-directory %s %s" out-dir texfile))
-                    (png-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
-                                     fg bg (calctex--dpi) tofile dvi-output))
-                    (log-buf (get-buffer-create "*CalcTeX Log*")))
-                (save-window-excursion 
-                  (message "%s" latex-cmd)
-                  (shell-command latex-cmd log-buf)
-                  (unless (file-exists-p dvi-output)
-                    (error "Error rendering latex to dvi. Check *CalcTeX Log* for command output"))
-                  (message "%s" png-cmd)
-                  (shell-command png-cmd log-buf)
-                  (unless (file-exists-p tofile)
-                    (error "Error converting dvi to png. Check *CalcTeX Log* for command output"))
-                  )
-                ))
-          `(file ,tofile type png))))
+Note that imagemagick is required to scale rendered images
+*down*. Downscaling allows calctex to render images at a higher
+DPI without blowing up the display size in the buffer. If this is
+enabled, then, rendered images may appear grainy on some
+displays.")
 
 (defvar calctex-format-latex-header
   "
@@ -117,17 +83,76 @@ rendered images may appear grainy on some displays.")
   \\endgroup
 }
 "
-  "docstring")
+  "The LaTeX preamble to use when rendering equation sources.
+This will be placed at the front of a file, and followed by the
+background and foreground color definitions, then by
+\begin{document} <EQUATION> \end{document}")
+
+(setq calctex-render-process
+      (lambda (src)
+        (if (file-exists-p calctex-latex-image-directory)
+            ()
+          (make-directory calctex-latex-image-directory 'parents))
+        (let* ((fg (calctex-latex-color :foreground))
+               (bg (calctex-latex-color :background))
+               (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
+               (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
+               (tofile (format "%s_%s.png" absprefix hash))
+               (latex-header calctex-format-latex-header)
+               (tmpdir temporary-file-directory)
+               (texfilebase (make-temp-name
+                             (expand-file-name "calctex_" tmpdir)))
+               (texfile (concat texfilebase ".tex"))
+               (base-name (file-name-base texfile))
+               (out-dir (or (file-name-directory texfile) "./"))
+               (dvi-output (expand-file-name (concat base-name ".dvi") out-dir))
+               )
+          (if (file-exists-p tofile)
+              ()
+            (with-temp-file texfile
+              (insert latex-header)
+              (insert "\n\\begin{document}\n"
+                      "\\definecolor{fg}{rgb}{" fg "}\n"
+                      "\\definecolor{bg}{rgb}{" bg "}\n"
+                      "\n\\pagecolor{bg}\n"
+                      "\n{\\color{fg}\n"
+                      src
+                      "\n}\n"
+                      "\n\\end{document}\n"))
+              (let ((latex-cmd (format "latex -interaction nonstopmode -output-directory %s %s" out-dir texfile))
+                    (png-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
+                                     fg bg (calctex--dpi) tofile dvi-output))
+                    (log-buf (get-buffer-create "*CalcTeX Log*")))
+                (save-window-excursion
+                  (message "%s" latex-cmd)
+                  (shell-command latex-cmd log-buf)
+                  (unless (file-exists-p dvi-output)
+                    (error "Error rendering latex to dvi. Check *CalcTeX Log* for command output"))
+                  (message "%s" png-cmd)
+                  (shell-command png-cmd log-buf)
+                  (unless (file-exists-p tofile)
+                    (error "Error converting dvi to png. Check *CalcTeX Log* for command output")))))
+          `(file ,tofile type png))))
+
 
 (defvar calctex--last-overlay nil)
 (defvar calctex--calc-line-numbering nil
-  "Sidechannel used to store the value of calc-line-numbering, so that it is usable
-in our hook without depending on hook execution ordering.")
-(defvar calctex--calc-line-breaking)
-(defvar calctex--calc-highlight-selections-with-faces)
+  "Sidechannel used to store the value of variable `calc-line-numbering'.
+This is used to modify that variable during hook execution and
+then restore its value.")
+
+(defvar calctex--calc-line-breaking nil
+  "Sidechannel used to store the value of variable `calc-line-breaking'.
+This is used to modify that variable during hook execution and
+then restore its value.")
+
+(defvar calctex--calc-highlight-selections-with-faces nil
+  "Sidechannel for the value of `calc-highlight-selections-with-faces'.
+This is used to modify that variable during hook execution and
+then restore its value.")
 
 (define-minor-mode calctex-mode
-  "Toggle CalcTeX mode."
+  "Turn calc into an editor for rendered LaTeX equations."
   nil
   "cTX"
   :keymap (make-sparse-keymap)
@@ -150,20 +175,25 @@ in our hook without depending on hook execution ordering.")
     ))
 
 (defun calctex--precommand ()
+  "The precommand hook to run.
+
+Stores the value of calc variables for restoration later."
   (progn
     (setq calctex--calc-line-numbering calc-line-numbering)
     (setq calctex--calc-line-breaking calc-line-breaking)
-    (setq calc-line-breaking nil)
-    ))
+    (setq calc-line-breaking nil)))
 
 (defun calctex--postcommand ()
+  "The postcommand hook to run.
+
+Renders line overlays in the calc buffer."
   (progn
     ;; This function will override the variables used by the previous one
     (calctex--create-line-overlays)
-    (setq calc-line-breaking calctex--calc-line-breaking)
-))
+    (setq calc-line-breaking calctex--calc-line-breaking)))
 
 (defun calctex--get-or-create-overlay (beg end)
+  "Get or create a calctex overlay between BEG and END."
   (let* ((overlays (cl-remove-if-not
                     (lambda (o) (eq (overlay-get o 'calctex-overlay-type) 'calctex-overlay))
                     (overlays-in beg end)))
@@ -178,9 +208,8 @@ in our hook without depending on hook execution ordering.")
                ov)))))
 
 (defun calctex--render-overlay-at (tex ov)
-  (let* ((fg (calctex-latex-color :foreground))
-         (cursor-color (calctex-latex-color-format (face-background 'cursor)))
-         (img (funcall calctex-render-process tex))
+  "Render LaTeX source TEX onto the overlay OV."
+  (let* ((img (funcall calctex-render-process tex))
          (img-file (plist-get img 'file))
          (img-type (plist-get img 'type)))
     (progn
@@ -192,6 +221,11 @@ in our hook without depending on hook execution ordering.")
       (setq disable-point-adjustment t))))
 
 (defun calctex--image-overlay-display (img-type img-file)
+  "Return the 'display property of an image overlay.
+
+Returns a 'display form for IMG-FILE rendered as IMG-TYPE. If
+imagemagick support is enabled, use that, otherwise, fall back to
+.png."
   (if (calctex--imagemagick-support)
       (list 'image
             :type 'imagemagick
@@ -207,6 +241,7 @@ in our hook without depending on hook execution ordering.")
           :margin 4)))
 
 (defun calctex--imagemagick-support ()
+  "Whether imagemagick support for images is available and enabled."
   (and (image-type-available-p 'imagemagick) calctex-imagemagick-enabledp))
 
 (defun calctex--dpi ()
@@ -216,7 +251,10 @@ in our hook without depending on hook execution ordering.")
     calctex-base-dpi))
 
 (defun calctex-latex-color (attr)
-  "Return a RGB color for the LaTeX color package."
+  "Return a RGB color for the LaTeX color package.
+
+Selects the attribute ATTR of the 'default face, and formats it
+as an RGB color value."
   (calctex-latex-color-format (face-attribute 'default attr nil)))
 
 (defun calctex-latex-color-format (color-name)
@@ -227,22 +265,25 @@ in our hook without depending on hook execution ordering.")
 
 ;; Copied from org-normalize-color
 (defun calctex-normalize-color (value)
-  "Return string to be used as color value for an RGB component."
+  "Convert VALUE to a string usable as a LaTeX RGB color component."
   (format "%g" (/ value 65535.0)))
 
 (defun calctex--remove-overlay-at-point ()
+  "Remove the calctex overlay at point, if any."
   (let ((ov (calctex--overlay-at-point)))
     (if ov
         (delete-overlay ov)
       ())))
 
 (defun calctex--overlay-at-point ()
+  "Find the calctex overlay at point."
   (car (cl-remove-if-not
         (lambda (o) (eq (overlay-get o 'calctex-overlay-type) 'calctex-overlay))
         (overlays-at (point)))))
 
 ;; Create or update an overlay on every calc stack entry
 (defun calctex--create-line-overlays ()
+  "Render overlays on all lines of the *Calculator* buffer."
   (if (and (string= calc-language "latex")
            (string= "*Calculator*" (buffer-name)))
       (progn
@@ -256,6 +297,9 @@ in our hook without depending on hook execution ordering.")
 
 ;; Create or update an overlay on the line at point
 (defun calctex--overlay-line ()
+  "Render an overlay on one line of the *Calculator* buffer.
+
+Called by calctex--create-line-overlays."
   (if (string=
        "."
        (string-trim (buffer-substring
@@ -272,10 +316,15 @@ in our hook without depending on hook execution ordering.")
            (tex (format "\\[ %s \\]" selected-line-contents)))
       (progn
         (move-overlay ov line-start line-end)
-        (calctex--render-overlay-at tex ov))
-          )))
+        (calctex--render-overlay-at tex ov)))))
 
 (defun calctex--lift-selection (text line-start line-end)
+  "Wrap selected portions of a LaTeX formula in a color directive.
+
+Wrap portions of the given line bounded by LINE-START and
+LINE-END in TEXT, which are displayed using the face
+'calc-selected-face, in a LaTeX macro which will color them in
+the rendered output."
   (save-excursion
     (progn
       (goto-char line-start)
@@ -308,27 +357,15 @@ in our hook without depending on hook execution ordering.")
                  "\\colornucleus{red}{"
                  (substring text min max)
                  "}"
-                 (substring text max))
-                )
-            text)
-        )
-      ))))
+                 (substring text max)))
+            text))))))
 
 (defun calctex--remove-overlays ()
+  "Remove all overlays from the *Calculator* buffer."
   (with-current-buffer "*Calculator*"
     (dolist (ov (overlays-in (point-min) (point-max)))
       (delete-overlay ov))))
 
-;;;###autoload
-(defun turn-on-calctex-mode ()
-  "Enable calctex-mode in current buffer."
-  (interactive "")
-  (calctex-mode 1))
-
-;;;###autoload
-(defun turn-off-calctex-mode ()
-  "Disable calctex-mode in current buffer."
-  (interactive "")
-  (calctex-mode -1))
-
 (provide 'calctex)
+
+;;; calctex.el ends here
