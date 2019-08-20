@@ -129,6 +129,6 @@
      (calctex-mode 1)
      (execute-kbd-macro (kbd "' a <RET>"))
      (execute-kbd-macro (kbd "2 <RET> *"))
-     (assert-nth-overlay-equals 0 "resources/2a.png" 'png))))
+     (assert-nth-overlay-image-equals 0 "resources/2a.png"))))
 
 (provide 'calctex-test)
