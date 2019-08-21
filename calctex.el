@@ -132,11 +132,9 @@ background and foreground color definitions, then by
                      fg bg (calctex--dpi) tofile dvi-output))
             (log-buf (get-buffer-create "*CalcTeX Log*")))
         (save-window-excursion
-          (message "%s" latex-cmd)
           (shell-command latex-cmd log-buf)
           (unless (file-exists-p dvi-output)
             (error "Error rendering latex to dvi. Check *CalcTeX Log* for command output"))
-          (message "%s" png-cmd)
           (shell-command png-cmd log-buf)
           (unless (file-exists-p tofile)
             (error "Error converting dvi to png. Check *CalcTeX Log* for command output")))))
