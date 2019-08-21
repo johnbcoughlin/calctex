@@ -15,25 +15,25 @@
 (require 'subr-x)
 (require 'calc-sel)
 
-(defvar calctex-render-process nil
-  "Function that renders a snippet of LaTeX source into an image.
-Will be called with SRC, the LaTeX source code. Should return a
-plist with properties 'file and 'type, representing the path to the
-rendered image and the image type.")
+(defcustom calctex-latex-image-directory "~/calctex/"
+  "The directory to cache rendered images."
+  :type '(string)
+  :group 'calctex)
 
-(defvar calctex-latex-image-directory "~/calctex/")
-
-(defvar calctex-base-dpi 150
+(defcustom calctex-base-dpi 150
   "The base dots-per-inch measurement to use for png rendering.
-A higher value will give sharper images")
+A higher value will give sharper images"
+  :type '(integer)
+  :group 'calctex)
 
-(defvar calctex-imagemagick-png-scaling 0.35
+(defcustom calctex-imagemagick-png-scaling 0.35
   "Controls the amount to scale a PNG image *down* by.
-
 This is to compensate for the image size change from a higher
-value of calctex-base-dpi")
+value of calctex-base-dpi"
+  :type '(float)
+  :group 'calctex)
 
-(defvar calctex-imagemagick-enabled-p t
+(defcustom calctex-imagemagick-enabled-p t
   "Whether imagemagick image display should be used.
 
 If Emacs has not been compiled with imagemagick support, this
@@ -43,7 +43,15 @@ Note that imagemagick is required to scale rendered images
 *down*. Downscaling allows calctex to render images at a higher
 DPI without blowing up the display size in the buffer. If this is
 enabled, then, rendered images may appear grainy on some
-displays.")
+displays."
+  :type '(boolean)
+  :group 'calctex)
+
+(defvar calctex-render-process #'calctex-default-render-process
+  "Function that renders a snippet of LaTeX source into an image.
+Will be called with SRC, the LaTeX source code. Should return a
+plist with properties 'file and 'type, representing the path to the
+rendered image and the image type.")
 
 (defvar calctex-format-latex-header
   "
@@ -87,8 +95,6 @@ displays.")
 This will be placed at the front of a file, and followed by the
 background and foreground color definitions, then by
 \begin{document} <EQUATION> \end{document}")
-
-(setq calctex-render-process #'calctex-default-render-process)
 
 (defun calctex-default-render-process (src)
   "The default function that calctex will use to render LaTeX SRC."
