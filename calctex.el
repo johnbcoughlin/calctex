@@ -70,9 +70,8 @@ rendered image and the image type.")
 \\addtolength{\\textheight}{-\\footskip}
 \\addtolength{\\textheight}{-3cm}
 \\setlength{\\topmargin}{1.5cm}
-\\addtolength{\\topmargin}{-2.54cm}% Set up highlighting for simulating the cursor
+\\addtolength{\\topmargin}{-2.54cm}
 \\usepackage{xcolor}
-%\\setlength{\\fboxsep}{0pt}
 \\usepackage{soul}
 \\usepackage{adjustbox}
 
