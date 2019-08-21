@@ -101,7 +101,7 @@
 (ert-deftest test-imagemagick-disabled ()
   (with-calc-test-harness
    (lambda ()
-     (let ((calctex-imagemagick-enabledp nil))
+     (let ((calctex-imagemagick-enabled-p nil))
        (calctex-mode 1)
        (execute-kbd-macro (kbd "' a <RET>"))
        (execute-kbd-macro (kbd "2 <RET> *"))
@@ -113,7 +113,7 @@
 (ert-deftest test-imagemagick-enabled ()
   (with-calc-test-harness
    (lambda ()
-     (let ((calctex-imagemagick-enabledp t))
+     (let ((calctex-imagemagick-enabled-p t))
        (calctex-mode 1)
        (execute-kbd-macro (kbd "' a <RET>"))
        (execute-kbd-macro (kbd "2 <RET> *"))

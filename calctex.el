@@ -33,7 +33,7 @@ A higher value will give sharper images")
 This is to compensate for the image size change from a higher
 value of calctex-base-dpi")
 
-(defvar calctex-imagemagick-enabledp t
+(defvar calctex-imagemagick-enabled-p t
   "Whether imagemagick image display should be used.
 
 If Emacs has not been compiled with imagemagick support, this
@@ -240,7 +240,7 @@ imagemagick support is enabled, use that, otherwise, fall back to
 
 (defun calctex--imagemagick-support ()
   "Whether imagemagick support for images is available and enabled."
-  (and (image-type-available-p 'imagemagick) calctex-imagemagick-enabledp))
+  (and (image-type-available-p 'imagemagick) calctex-imagemagick-enabled-p))
 
 (defun calctex--dpi ()
   "Compute the render DPI to request from dvipng."
