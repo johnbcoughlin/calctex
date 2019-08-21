@@ -165,14 +165,12 @@ then restore its value.")
         (setq calctex--calc-highlight-selections-with-faces calc-highlight-selections-with-faces)
         (setq calc-highlight-selections-with-faces t)
         (calc-show-selections -1)
-        (calc-latex-language nil)
-        )
+        (calc-latex-language nil))
     (remove-hook 'pre-command-hook 'calctex--precommand)
     (remove-hook 'post-command-hook 'calctex--postcommand)
     (remove-hook 'post-self-insert-hook 'calctex--postcommand)
     (setq calc-highlight-selections-with-faces calctex--calc-highlight-selections-with-faces)
-    (calctex--remove-overlays)
-    ))
+    (calctex--remove-overlays)))
 
 (defun calctex--precommand ()
   "The precommand hook to run.
@@ -284,16 +282,14 @@ as an RGB color value."
 ;; Create or update an overlay on every calc stack entry
 (defun calctex--create-line-overlays ()
   "Render overlays on all lines of the *Calculator* buffer."
-  (if (and (string= calc-language "latex")
-           (string= "*Calculator*" (buffer-name)))
-      (progn
-        (goto-char (point-min))
-        ; Skip the header line --- Emacs Calculator Mode ---
-        (forward-line 1)
-        (while (not (eobp))
-          (calctex--overlay-line)
-          (forward-line 1)))
-    ()))
+  (when (and (string= calc-language "latex")
+             (string= "*Calculator*" (buffer-name)))
+    (goto-char (point-min))
+    ; Skip the header line "--- Emacs Calculator Mode ---"
+    (forward-line 1)
+    (while (not (eobp))
+      (calctex--overlay-line)
+      (forward-line 1))))
 
 ;; Create or update an overlay on the line at point
 (defun calctex--overlay-line ()
