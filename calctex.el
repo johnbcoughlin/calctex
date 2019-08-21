@@ -88,52 +88,53 @@ This will be placed at the front of a file, and followed by the
 background and foreground color definitions, then by
 \begin{document} <EQUATION> \end{document}")
 
-(setq calctex-render-process
-      (lambda (src)
-        (if (file-exists-p calctex-latex-image-directory)
-            ()
-          (make-directory calctex-latex-image-directory 'parents))
-        (let* ((fg (calctex-latex-color :foreground))
-               (bg (calctex-latex-color :background))
-               (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
-               (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
-               (tofile (format "%s_%s.png" absprefix hash))
-               (latex-header calctex-format-latex-header)
-               (tmpdir temporary-file-directory)
-               (texfilebase (make-temp-name
-                             (expand-file-name "calctex_" tmpdir)))
-               (texfile (concat texfilebase ".tex"))
-               (base-name (file-name-base texfile))
-               (out-dir (or (file-name-directory texfile) "./"))
-               (dvi-output (expand-file-name (concat base-name ".dvi") out-dir))
-               )
-          (if (file-exists-p tofile)
-              ()
-            (with-temp-file texfile
-              (insert latex-header)
-              (insert "\n\\begin{document}\n"
-                      "\\definecolor{fg}{rgb}{" fg "}\n"
-                      "\\definecolor{bg}{rgb}{" bg "}\n"
-                      "\n\\pagecolor{bg}\n"
-                      "\n{\\color{fg}\n"
-                      src
-                      "\n}\n"
-                      "\n\\end{document}\n"))
-              (let ((latex-cmd (format "latex -interaction nonstopmode -output-directory %s %s" out-dir texfile))
-                    (png-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
-                                     fg bg (calctex--dpi) tofile dvi-output))
-                    (log-buf (get-buffer-create "*CalcTeX Log*")))
-                (save-window-excursion
-                  (message "%s" latex-cmd)
-                  (shell-command latex-cmd log-buf)
-                  (unless (file-exists-p dvi-output)
-                    (error "Error rendering latex to dvi. Check *CalcTeX Log* for command output"))
-                  (message "%s" png-cmd)
-                  (shell-command png-cmd log-buf)
-                  (unless (file-exists-p tofile)
-                    (error "Error converting dvi to png. Check *CalcTeX Log* for command output")))))
-          `(file ,tofile type png))))
+(setq calctex-render-process #'calctex-default-render-process)
 
+(defun calctex-default-render-process (src)
+  "The default function that calctex will use to render LaTeX SRC."
+  (unless (file-exists-p calctex-latex-image-directory)
+    (make-directory calctex-latex-image-directory 'parents))
+  (let* ((fg (calctex-latex-color :foreground))
+         (bg (calctex-latex-color :background))
+         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
+         (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
+         (tofile (format "%s_%s.png" absprefix hash))
+         (latex-header calctex-format-latex-header)
+         (tmpdir temporary-file-directory)
+         (texfilebase (make-temp-name
+                       (expand-file-name "calctex_" tmpdir)))
+         (texfile (concat texfilebase ".tex"))
+         (base-name (file-name-base texfile))
+         (out-dir (or (file-name-directory texfile) "./"))
+         (dvi-output (expand-file-name (concat base-name ".dvi") out-dir)))
+    (unless (file-exists-p tofile)
+      (with-temp-file texfile
+        (insert latex-header)
+        (insert "\n\\begin{document}\n"
+                "\\definecolor{fg}{rgb}{" fg "}\n"
+                "\\definecolor{bg}{rgb}{" bg "}\n"
+                "\n\\pagecolor{bg}\n"
+                "\n{\\color{fg}\n"
+                src
+                "\n}\n"
+                "\n\\end{document}\n"))
+      (let ((latex-cmd
+             (format "latex -interaction nonstopmode -output-directory %s %s"
+                     out-dir texfile))
+            (png-cmd
+             (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
+                     fg bg (calctex--dpi) tofile dvi-output))
+            (log-buf (get-buffer-create "*CalcTeX Log*")))
+        (save-window-excursion
+          (message "%s" latex-cmd)
+          (shell-command latex-cmd log-buf)
+          (unless (file-exists-p dvi-output)
+            (error "Error rendering latex to dvi. Check *CalcTeX Log* for command output"))
+          (message "%s" png-cmd)
+          (shell-command png-cmd log-buf)
+          (unless (file-exists-p tofile)
+            (error "Error converting dvi to png. Check *CalcTeX Log* for command output")))))
+    `(file ,tofile type png)))
 
 (defvar calctex--last-overlay nil)
 (defvar calctex--calc-line-numbering nil
