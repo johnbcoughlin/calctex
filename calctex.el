@@ -95,12 +95,13 @@ This will be placed at the front of a file, and followed by the
 background and foreground color definitions, then by
 \begin{document} <EQUATION> \end{document}")
 
+;;;###autoload
 (defun calctex-default-render-process (src)
   "The default function that calctex will use to render LaTeX SRC."
   (unless (file-exists-p calctex-latex-image-directory)
     (make-directory calctex-latex-image-directory 'parents))
-  (let* ((fg (calctex-latex-color :foreground))
-         (bg (calctex-latex-color :background))
+  (let* ((fg (calctex--latex-color :foreground))
+         (bg (calctex--latex-color :background))
          (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
          (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
          (tofile (format "%s_%s.png" absprefix hash))
@@ -139,7 +140,6 @@ background and foreground color definitions, then by
             (error "Error converting dvi to png. Check *CalcTeX Log* for command output")))))
     `(file ,tofile type png)))
 
-(defvar calctex--last-overlay nil)
 (defvar calctex--calc-line-numbering nil
   "Sidechannel used to store the value of variable `calc-line-numbering'.
 This is used to modify that variable during hook execution and
@@ -155,6 +155,7 @@ then restore its value.")
 This is used to modify that variable during hook execution and
 then restore its value.")
 
+;;;###autoload
 (define-minor-mode calctex-mode
   "Turn calc into an editor for rendered LaTeX equations."
   nil
@@ -252,21 +253,21 @@ imagemagick support is enabled, use that, otherwise, fall back to
       (round (/ calctex-base-dpi calctex-imagemagick-png-scaling))
     calctex-base-dpi))
 
-(defun calctex-latex-color (attr)
+(defun calctex--latex-color (attr)
   "Return a RGB color for the LaTeX color package.
 
 Selects the attribute ATTR of the 'default face, and formats it
 as an RGB color value."
-  (calctex-latex-color-format (face-attribute 'default attr nil)))
+  (calctex--latex-color-format (face-attribute 'default attr nil)))
 
-(defun calctex-latex-color-format (color-name)
+(defun calctex--latex-color-format (color-name)
   "Convert COLOR-NAME to a RGB color value."
   (apply #'format "%s %s %s"
-         (mapcar 'calctex-normalize-color
+         (mapcar 'calctex--normalize-color
                  (color-values color-name))))
 
 ;; Copied from org-normalize-color
-(defun calctex-normalize-color (value)
+(defun calctex--normalize-color (value)
   "Convert VALUE to a string usable as a LaTeX RGB color component."
   (format "%g" (/ value 65535.0)))
 
