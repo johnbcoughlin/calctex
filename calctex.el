@@ -44,7 +44,7 @@ A higher value will give sharper images"
 (defcustom calctex-imagemagick-png-scaling 0.35
   "Controls the amount to scale a PNG image *down* by.
 This is to compensate for the image size change from a higher
-value of calctex-base-dpi"
+value of `calctex-base-dpi'"
   :type '(float)
   :group 'calctex)
 
@@ -315,7 +315,7 @@ as an RGB color value."
 (defun calctex--overlay-line ()
   "Render an overlay on one line of the *Calculator* buffer.
 
-Called by calctex--create-line-overlays."
+Called by `calctex--create-line-overlays'."
   (if (string=
        "."
        (string-trim (buffer-substring
