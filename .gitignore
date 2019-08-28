@@ -9,3 +9,4 @@ ltximg/*
 resources/*.png
 resources/*.log
 *.DS_Store
+*.elc
