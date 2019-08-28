@@ -16,6 +16,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 (require 'calctex)
+(require 'ert)
 
 (defun with-calc-test-harness (body)
   (calc)
