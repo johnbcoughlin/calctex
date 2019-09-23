@@ -2,7 +2,7 @@
 
 ;; Author: Jack Coughlin <jack@johnbcoughlin.com>
 ;; URL: https://github.com/johnbcoughlin/calctex
-;; Package-Version: 0.1
+;; Version: 0.1
 ;; Package-Requires: ((emacs "24.4"))
 
 ;; Copyright (C) 2019 John B Coughlin
@@ -29,11 +29,6 @@
 
 (require 'subr-x)
 (require 'calc-sel)
-
-(defcustom calctex-latex-image-directory "~/calctex/"
-  "The directory to cache rendered images."
-  :type '(string)
-  :group 'calctex)
 
 (defcustom calctex-base-dpi 150
   "The base dots-per-inch measurement to use for png rendering.
@@ -113,12 +108,10 @@ background and foreground color definitions, then by
 ;;;###autoload
 (defun calctex-default-render-process (src)
   "The default function that calctex will use to render LaTeX SRC."
-  (unless (file-exists-p calctex-latex-image-directory)
-    (make-directory calctex-latex-image-directory 'parents))
   (let* ((fg (calctex--latex-color :foreground))
          (bg (calctex--latex-color :background))
          (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
-         (absprefix (expand-file-name calctex-latex-image-directory "calctex-ltximg"))
+         (absprefix (expand-file-name (temporary-file-directory) "calctex-ltximg"))
          (tofile (format "%s_%s.png" absprefix hash))
          (latex-header calctex-format-latex-header)
          (tmpdir temporary-file-directory)
@@ -215,7 +208,7 @@ Renders line overlays in the calc buffer."
   (let* ((overlays (cl-remove-if-not
                     (lambda (o) (eq (overlay-get o 'calctex-overlay-type) 'calctex-overlay))
                     (overlays-in beg end)))
-         (overlay (if overlays (car overlays) nil)))
+         (overlay (when overlays (car overlays))))
     (if overlay
         overlay
       (let ((ov (make-overlay beg end)))
@@ -289,14 +282,12 @@ as an RGB color value."
 (defun calctex--remove-overlay-at-point ()
   "Remove the calctex overlay at point, if any."
   (let ((ov (calctex--overlay-at-point)))
-    (if ov
-        (delete-overlay ov)
-      ())))
+    (when ov (delete-overlay ov) ())))
 
 (defun calctex--overlay-at-point ()
   "Find the calctex overlay at point."
   (car (cl-remove-if-not
-        (lambda (o) (eq (overlay-get o 'calctex-overlay-type) 'calctex-overlay))
+        (lambda (o) (eq (overlay-get o #'calctex-overlay-type) #'calctex-overlay))
         (overlays-at (point)))))
 
 ;; Create or update an overlay on every calc stack entry
@@ -316,12 +307,11 @@ as an RGB color value."
   "Render an overlay on one line of the *Calculator* buffer.
 
 Called by `calctex--create-line-overlays'."
-  (if (string=
+  (when (string=
        "."
        (string-trim (buffer-substring
                      (line-beginning-position)
-                     (line-end-position))))
-      ()
+                     (line-end-position)))))
     (let* ((line-start (if calctex--calc-line-numbering
                            (+ (line-beginning-position) 4)
                          (line-beginning-position)))
@@ -332,7 +322,7 @@ Called by `calctex--create-line-overlays'."
            (tex (format "\\[ %s \\]" selected-line-contents)))
       (progn
         (move-overlay ov line-start line-end)
-        (calctex--render-overlay-at tex ov)))))
+        (calctex--render-overlay-at tex ov))))
 
 (defun calctex--lift-selection (text line-start line-end)
   "Wrap selected portions of a LaTeX formula in a color directive.
@@ -354,18 +344,12 @@ the rendered output."
                    (selected (equal 'calc-selected-face face)))
               (progn
                 (if min
-                    (if (not selected)
-                        (setq max pt)
-                      ())
-                  (if selected
-                      (setq min pt)
-                    ()))
+                    (when (not selected) (setq max pt))
+                  (when selected (setq min pt)))
                 (forward-char))))
           (if min
               (progn
-                (if (not max)
-                    (setq max (point))
-                  ())
+                (when (not max) (setq max (point)))
                 (setq min (- min line-start))
                 (setq max (- max line-start))
                 (concat
