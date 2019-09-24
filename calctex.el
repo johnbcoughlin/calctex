@@ -84,6 +84,7 @@ rendered image and the image type.")
 \\usepackage{xcolor}
 \\usepackage{soul}
 \\usepackage{adjustbox}
+\\usepackage{amsmath}
 
 \\usepackage{xparse}
 
