@@ -101,6 +101,7 @@ rendered image and the image type.")
      \\IfValueT{#5}{^{\\textcolor{currcolor}{#5}}}% superscript
     }%
   \\endgroup
+
 }
 "
   "The LaTeX preamble to use when rendering equation sources.
@@ -113,8 +114,8 @@ background and foreground color definitions, then by
   "The default function that calctex will use to render LaTeX SRC."
   (let* ((fg (calctex--latex-color :foreground))
          (bg (calctex--latex-color :background))
-         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi)))))
-         (absprefix (expand-file-name (temporary-file-directory) "calctex-ltximg"))
+         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) calctex-format-latex-header))))
+         (absprefix (expand-file-name "calctex-ltximg" (temporary-file-directory)))
          (tofile (format "%s_%s.png" absprefix hash))
          (latex-header calctex-format-latex-header)
          (tmpdir temporary-file-directory)
@@ -126,7 +127,8 @@ background and foreground color definitions, then by
          (dvi-output (expand-file-name (concat base-name ".dvi") out-dir)))
     (unless (file-exists-p tofile)
       (with-temp-file texfile
-        (insert "\n\\begin{document}\n"
+        (insert "\\newcommand{\\cmt}[1]{\\ignorespaces}"
+                "\\begin{document}\n"
                 "\\definecolor{fg}{rgb}{" fg "}\n"
                 "\\definecolor{bg}{rgb}{" bg "}\n"
                 "\n\\pagecolor{bg}\n"

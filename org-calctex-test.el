@@ -33,21 +33,21 @@
      (org-calctex-next-formula)
      (should (equal (point) 28))
      (org-calctex-next-formula)
-     (should (equal (point) 65)))))
+     (should (equal (point) 87)))))
 
 (ert-deftest test-next-formula-point-within-formula ()
   (with-org-calctex-test-harness
    (lambda ()
      (goto-char 30)
      (org-calctex-next-formula)
-     (should (equal (point) 65)))))
+     (should (equal (point) 87)))))
 
 (ert-deftest test-previous-formula ()
   (with-org-calctex-test-harness
    (lambda ()
-     (goto-char 90)
+     (goto-char 133)
      (org-calctex-prev-formula)
-     (should (equal (point) 65))
+     (should (equal (point) 87))
      (org-calctex-prev-formula)
      (should (equal (point) 28)))))
 
@@ -89,8 +89,7 @@
       (org-calctex-overlay-at-point)
       "pythag.png")
      (org-calctex-hide-overlay-at-point)
-     (should (equal nil (org-calctex-overlay-at-point)))
-     )))
+     (should (equal nil (org-calctex-overlay-at-point))))))
 
 
 (provide 'org-calctex-test)
