@@ -86,6 +86,7 @@ rendered image and the image type.")
 \\usepackage{adjustbox}
 \\usepackage{amsmath}
 \\usepackage{amssymb}
+\\usepackage{siunitx}
 
 \\usepackage{xparse}
 
