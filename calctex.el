@@ -126,7 +126,6 @@ background and foreground color definitions, then by
          (dvi-output (expand-file-name (concat base-name ".dvi") out-dir)))
     (unless (file-exists-p tofile)
       (with-temp-file texfile
-        (insert latex-header)
         (insert "\n\\begin{document}\n"
                 "\\definecolor{fg}{rgb}{" fg "}\n"
                 "\\definecolor{bg}{rgb}{" bg "}\n"
@@ -136,8 +135,8 @@ background and foreground color definitions, then by
                 "\n}\n"
                 "\n\\end{document}\n"))
       (let ((latex-cmd
-             (format "latex -interaction nonstopmode -output-directory %s %s"
-                     out-dir texfile))
+             (format "latex -fmt %s -interaction nonstopmode -output-directory %s %s"
+                     calctex--preprocessed-latex-header-file out-dir texfile))
             (png-cmd
              (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s %s"
                      fg bg (calctex--dpi) tofile dvi-output))
@@ -177,16 +176,45 @@ then restore its value.")
         (add-hook 'pre-command-hook #'calctex--precommand)
         (add-hook 'post-command-hook #'calctex--postcommand)
         (add-hook 'post-self-insert-hook #'calctex--postcommand)
+        (calctex--preprocess-latex-header)
         (setq calctex--calc-line-breaking calc-line-breaking)
         (setq calctex--calc-highlight-selections-with-faces calc-highlight-selections-with-faces)
         (setq calc-highlight-selections-with-faces t)
-        (calc-show-selections -1)
-        (calc-latex-language nil))
+        (save-excursion
+          (progn
+            (message "Starting calc")
+            (unless (get-buffer "*Calculator*") (calc))
+            (calc-show-selections -1)
+            (calc-latex-language nil))))
     (remove-hook 'pre-command-hook #'calctex--precommand)
     (remove-hook 'post-command-hook #'calctex--postcommand)
     (remove-hook 'post-self-insert-hook #'calctex--postcommand)
     (setq calc-highlight-selections-with-faces calctex--calc-highlight-selections-with-faces)
     (calctex--remove-overlays)))
+
+(defvar calctex--preprocessed-latex-header-file nil
+  "Location of the cached latex header .fmt file.")
+
+(defun calctex--preprocess-latex-header ()
+  (let* ((tmpdir temporary-file-directory)
+         (texfilebase (make-temp-name (expand-file-name "calctex-header" tmpdir)))
+         (texfile (concat texfilebase ".tex"))
+         (header-hash (sha1 calctex-format-latex-header))
+         (header-file-name (expand-file-name (format "header%s.fmt" header-hash) tmpdir)))
+    (unless (and (file-exists-p header-file-name)
+                 (equal header-file-name calctex--preprocessed-latex-header-file))
+      (progn
+        (message "redoing header file")
+        (with-temp-file texfile
+          (insert calctex-format-latex-header))
+        (let* ((cmd (format "cd %s && latex -ini -jobname=\"header%s\" \"&latex %s\\dump\"" tmpdir header-hash texfile))
+               (log-buf (get-buffer-create "*CalcTeX Log*"))
+               (result (shell-command cmd log-buf)))
+          (message "%s" result)
+          (message "%s" header-file-name)
+          (if (equal result 0)
+              (setq calctex--preprocessed-latex-header-file header-file-name)
+            (error "Error preprocessing the LaTeX header. See *CalcTeX Log* for details.")))))))
 
 (defun calctex--precommand ()
   "The precommand hook to run.
