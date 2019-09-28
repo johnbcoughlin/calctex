@@ -1,0 +1,60 @@
+% Copyright (C) 2019 John B Coughlin
+
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+\documentclass{article}
+\usepackage[usenames]{color}
+\pagestyle{empty}             % do not remove
+% The settings below are copied from fullpage.sty
+\setlength{\textwidth}{\paperwidth}
+\addtolength{\textwidth}{-3cm}
+\setlength{\oddsidemargin}{1.5cm}
+\addtolength{\oddsidemargin}{-2.54cm}
+\setlength{\evensidemargin}{\oddsidemargin}
+\setlength{\textheight}{\paperheight}
+\addtolength{\textheight}{-\headheight}
+\addtolength{\textheight}{-\headsep}
+\addtolength{\textheight}{-\footskip}
+\addtolength{\textheight}{-3cm}
+\setlength{\topmargin}{1.5cm}
+\addtolength{\topmargin}{-2.54cm}% Set up highlighting for simulating the cursor
+\usepackage{xcolor}
+%\setlength{\fboxsep}{0pt}
+\usepackage{soul}
+\usepackage{adjustbox}
+
+\usepackage{xparse}
+
+\NewDocumentCommand{\colornucleus}{omme{_^}}{%
+  \begingroup\colorlet{currcolor}{.}%
+  \IfValueTF{#1}
+   {\textcolor[#1]{#2}}
+   {\textcolor{#2}}
+    {%
+     #3% the nucleus
+     \IfValueT{#4}{_{\textcolor{currcolor}{#4}}}% subscript
+     \IfValueT{#5}{^{\textcolor{currcolor}{#5}}}% superscript
+    }%
+  \endgroup
+}
+
+\begin{document}
+\definecolor{fg}{rgb}{0 0 0}
+\definecolor{bg}{rgb}{1 1 1}
+\pagecolor{bg}
+{\color{fg}
+\[ a^2 + b^2 = c^2 \]
+}
+\end{document}
