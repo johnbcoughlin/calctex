@@ -10,3 +10,4 @@ resources/*.png
 resources/*.log
 *.DS_Store
 *.elc
+workdir*

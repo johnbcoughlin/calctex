@@ -90,12 +90,15 @@ settings, make sure that you have the following LaTeX packages installed:
 - ~soul~
 - ~adjustbox~
 - ~collectbox~
+- ~amsmath~
+- ~amssymb~
+- ~siunitx~
 
 If you are using TeXLive, you can install these with ~tlmgr~:
 
 #+begin_src bash :tangle latex_install.sh
 sudo tlmgr update --self
-sudo tlmgr install dvipng l3packages xcolor soul adjustbox collectbox
+sudo tlmgr install dvipng l3packages xcolor soul adjustbox collectbox amsmath amssymb siunitx
 #+end_src
 
 You should now be able to run

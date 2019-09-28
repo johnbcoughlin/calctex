@@ -23,6 +23,7 @@
   (find-file "resources/test.org")
   (revert-buffer nil t)
   (set-face-attribute 'default nil :foreground "black" :background "white")
+  (calctex-mode 1)
   (goto-char 1)
   (funcall body))
 
