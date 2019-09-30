@@ -1,7 +1,7 @@
 * Heading 1
 ** An equation
-\[ a^2 + b^2 = c^2 \]
+\[ \cmt{a^2 + b^2 = c^2} a^2 + b^2 = c^2 \]
 ** Another one
-$e^{i\pi} + 1 = 0$
+$\cmt{exp(i * pi) + 1 = 0} e^{i\pi} + 1 = 0$
 
 postamble
