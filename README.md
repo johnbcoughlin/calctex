@@ -1,19 +1,19 @@
 
 # Table of Contents
 
-1.  [CalcTeX](#orge28baaf)
-    1.  [Why a WYSIWYG equation editor?](#orgc6a0b78)
-        1.  [A Tool of Thought](#orgc9c6ee2)
-        2.  [No clicking](#org29cafeb)
-2.  [Installation](#org5f1df4c)
-    1.  [MacOS](#org1870a0d)
-    2.  [LaTeX Packages](#org6faa701)
-3.  [Usage](#org01f10bb)
-    1.  [Integrating with documents](#org58f17f2)
-    2.  [Display options](#orge3675ac)
+1.  [CalcTeX](#orgab52222)
+    1.  [Why a WYSIWYG equation editor?](#org874df55)
+        1.  [A Tool of Thought](#orga8a7270)
+        2.  [No clicking](#org07d9fdb)
+2.  [Installation](#orgd09014c)
+    1.  [MacOS](#org6926c3b)
+    2.  [LaTeX Packages](#org440a3be)
+3.  [Usage](#org5659811)
+    1.  [Integrating with documents](#orgd423693)
+    2.  [Display options](#org53921d2)
 
 
-<a id="orge28baaf"></a>
+<a id="orgab52222"></a>
 
 # CalcTeX
 
@@ -23,7 +23,7 @@ editor for LaTeX formulas.
 ![img](demos/normal.gif)
 
 
-<a id="orgc6a0b78"></a>
+<a id="org874df55"></a>
 
 ## Why a WYSIWYG equation editor?
 
@@ -51,7 +51,7 @@ where you are in the formula, alert you to any mistakes, or provide opportunity
 for reflecting on the content of what you're typing.
 
 
-<a id="orgc9c6ee2"></a>
+<a id="orga8a7270"></a>
 
 ### A Tool of Thought
 
@@ -61,7 +61,7 @@ the computer, we deserve an editor that **augments** the tool of mathematical
 notation, not one that suffocates it.
 
 
-<a id="org29cafeb"></a>
+<a id="org07d9fdb"></a>
 
 ### No clicking
 
@@ -71,12 +71,12 @@ for Emacs Calc, which provides a huge number of key commands for manipulating
 equations.
 
 
-<a id="org5f1df4c"></a>
+<a id="orgd09014c"></a>
 
 # Installation
 
 
-<a id="org1870a0d"></a>
+<a id="org6926c3b"></a>
 
 ## MacOS
 
@@ -94,7 +94,7 @@ Check that you have them installed:
     tlmgr -version
 
 
-<a id="org6faa701"></a>
+<a id="org440a3be"></a>
 
 ## LaTeX Packages
 
@@ -107,11 +107,14 @@ settings, make sure that you have the following LaTeX packages installed:
 -   `soul`
 -   `adjustbox`
 -   `collectbox`
+-   `amsmath`
+-   `amssymb`
+-   `siunitx`
 
 If you are using TeXLive, you can install these with `tlmgr`:
 
     sudo tlmgr update --self
-    sudo tlmgr install dvipng l3packages xcolor soul adjustbox collectbox
+    sudo tlmgr install dvipng l3packages xcolor soul adjustbox collectbox amsmath amssymb siunitx
 
 You should now be able to run
 
@@ -126,7 +129,7 @@ However, be aware that doing so may compromise some facilities of CalcTeX,
 particularly its selection handling.
 
 
-<a id="org01f10bb"></a>
+<a id="org5659811"></a>
 
 # Usage
 
@@ -136,7 +139,7 @@ type a numeral to begin a numeric entry. Refer to the [Calc manual](https://www.
 mathematical commands that are available.
 
 
-<a id="org58f17f2"></a>
+<a id="orgd423693"></a>
 
 ## Integrating with documents
 
@@ -146,7 +149,7 @@ LaTeX or Org buffer, move point to a LaTeX formula environment, and type
 contents of the equation in the buffer you are editing.
 
 
-<a id="orge3675ac"></a>
+<a id="org53921d2"></a>
 
 ## Display options
 
@@ -160,9 +163,10 @@ Note that disabling `imagemagick` may have negative effects on the image quality
 on some displays: it disables downscaling the rendered image, which is sometimes
 necessary for a sharp image.
 
-The scaling factor applied by `imagemagick` is controlled by the variable
-`calctex-imagemagick-png-scaling`. It defaults to `0.35`. The "base" DPI of the
-rendered image is controlled by the variable `calctex-base-dpi`, and is `150` by
-default, meaning `150` for `png` images and `150 / 0.35 = 428` for `imagemagick`
-images. You can change these values to adapt CalcTex to your preferences.
+The scaling factor applied by `imagemagick` is controlled by the variables
+`calctex-base-imagemagick-png-scaling` and `calctex-imagemagick-png-scaling`.
+The first controls the amount by which the "base" dots-per-inch value of
+`calctex-base-dpi` is increased, to improve resolution of the rendered image.
+This will have an immediate effect on the size of the overlay that appears in
+the buffer, which can be corrected by adjusting `calctex-imagemagick-png-scaling`.
 

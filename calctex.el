@@ -36,10 +36,19 @@ A higher value will give sharper images"
   :type '(integer)
   :group 'calctex)
 
-(defcustom calctex-imagemagick-png-scaling 0.35
-  "Controls the amount to scale a PNG image *down* by.
-This is to compensate for the image size change from a higher
-value of `calctex-base-dpi'"
+(defcustom calctex-base-imagemagick-png-scaling 2.85
+  "Controls the amount to increase the dots-per-inch requested from
+the rendering program, solely to compensate for image graininess.
+If imagemagick is available, calctex will render an image that is this
+much higher resolution, and scale it back down to the same size."
+  :type '(float)
+  :group 'calctex)
+
+(defcustom calctex-imagemagick-png-scaling 1.0
+  "Controls the amount by which images will be scaled when rendered to
+the buffer. In combination with calctex-base-imagemagick-png-scaling,
+allows one to control the size of a rendered image on the page, without
+sacrificing dots-per-inch."
   :type '(float)
   :group 'calctex)
 
@@ -276,13 +285,13 @@ imagemagick support is enabled, use that, otherwise, fall back to
             :format img-type
             :file img-file
             :ascent 'center
-            :scale calctex-imagemagick-png-scaling
-            :margin 4)
+            :scale (/ calctex-imagemagick-png-scaling calctex-base-imagemagick-png-scaling)
+            :margin 1)
     (list 'image
           :type img-type
           :file img-file
           :ascent 'center
-          :margin 4)))
+          :margin 1)))
 
 (defun calctex--imagemagick-support ()
   "Whether imagemagick support for images is available and enabled."
@@ -291,7 +300,7 @@ imagemagick support is enabled, use that, otherwise, fall back to
 (defun calctex--dpi ()
   "Compute the render DPI to request from dvipng."
   (if (calctex--imagemagick-support)
-      (round (/ calctex-base-dpi calctex-imagemagick-png-scaling))
+      (round (* calctex-base-dpi calctex-base-imagemagick-png-scaling))
     calctex-base-dpi))
 
 (defun calctex--latex-color (attr)

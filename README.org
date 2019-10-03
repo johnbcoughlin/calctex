@@ -142,8 +142,9 @@ Note that disabling ~imagemagick~ may have negative effects on the image quality
 on some displays: it disables downscaling the rendered image, which is sometimes
 necessary for a sharp image.
 
-The scaling factor applied by ~imagemagick~ is controlled by the variable
-~calctex-imagemagick-png-scaling~. It defaults to ~0.35~. The "base" DPI of the
-rendered image is controlled by the variable ~calctex-base-dpi~, and is ~150~ by
-default, meaning ~150~ for ~png~ images and ~150 / 0.35 = 428~ for ~imagemagick~
-images. You can change these values to adapt CalcTex to your preferences.
+The scaling factor applied by ~imagemagick~ is controlled by the variables
+~calctex-base-imagemagick-png-scaling~ and ~calctex-imagemagick-png-scaling~.
+The first controls the amount by which the "base" dots-per-inch value of
+~calctex-base-dpi~ is increased, to improve resolution of the rendered image.
+This will have an immediate effect on the size of the overlay that appears in
+the buffer, which can be corrected by adjusting ~calctex-imagemagick-png-scaling~.
