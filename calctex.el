@@ -66,6 +66,16 @@ displays."
   :type '(boolean)
   :group 'calctex)
 
+(defcustom calctex-foreground-darken-percent 0
+  "The percentage amount by which to darken the foreground of the
+rendered image. Darkening may be desirable to improve the contrast of the
+rendered equations, whose font is typically finer than the font in the
+rest of the buffer, and so appears lighter.
+
+This value may be negative, in which case it lightens the foreground."
+  :type '(integer)
+  :group 'calctex)
+
 (defvar calctex-render-process #'calctex-default-render-process
   "Function that renders a snippet of LaTeX source into an image.
 Will be called with SRC, the LaTeX source code. Should return a
@@ -121,7 +131,7 @@ background and foreground color definitions, then by
 ;;;###autoload
 (defun calctex-default-render-process (src)
   "The default function that calctex will use to render LaTeX SRC."
-  (let* ((fg (calctex--latex-color :foreground))
+  (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
          (bg (calctex--latex-color :background))
          (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) calctex-format-latex-header))))
          (absprefix (expand-file-name "calctex-ltximg" (temporary-file-directory)))
@@ -303,12 +313,14 @@ imagemagick support is enabled, use that, otherwise, fall back to
       (round (* calctex-base-dpi calctex-base-imagemagick-png-scaling))
     calctex-base-dpi))
 
-(defun calctex--latex-color (attr)
+(defun calctex--latex-color (attr &optional lighten-percent)
   "Return a RGB color for the LaTeX color package.
 
-Selects the attribute ATTR of the 'default face, and formats it
-as an RGB color value."
-  (calctex--latex-color-format (face-attribute 'default attr nil)))
+Selects the attribute ATTR of the 'default face, lightens
+it by the given percentage,and formats it as an RGB color value.
+
+The LIGHTENPERCENT parameter may be negative, which darkens the color."
+  (calctex--latex-color-format (color-lighten-name (face-attribute 'default attr nil) (or lighten-percent 0))))
 
 (defun calctex--latex-color-format (color-name)
   "Convert COLOR-NAME to a RGB color value."

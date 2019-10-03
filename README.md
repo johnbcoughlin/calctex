@@ -1,19 +1,21 @@
 
 # Table of Contents
 
-1.  [CalcTeX](#orgab52222)
-    1.  [Why a WYSIWYG equation editor?](#org874df55)
-        1.  [A Tool of Thought](#orga8a7270)
-        2.  [No clicking](#org07d9fdb)
-2.  [Installation](#orgd09014c)
-    1.  [MacOS](#org6926c3b)
-    2.  [LaTeX Packages](#org440a3be)
-3.  [Usage](#org5659811)
-    1.  [Integrating with documents](#orgd423693)
-    2.  [Display options](#org53921d2)
+1.  [CalcTeX](#orgc67ad3b)
+    1.  [Why a WYSIWYG equation editor?](#orgc1b4053)
+        1.  [A Tool of Thought](#orge78610c)
+        2.  [No clicking](#org2d0c7db)
+2.  [Installation](#org03e079d)
+    1.  [MacOS](#org2a81c17)
+    2.  [LaTeX Packages](#org2f2223a)
+3.  [Usage](#org6636708)
+    1.  [Integrating with documents](#org6271775)
+    2.  [Display options](#org92480f0)
+        1.  [Scaling](#orga73e863)
+        2.  [Other](#org0c04504)
 
 
-<a id="orgab52222"></a>
+<a id="orgc67ad3b"></a>
 
 # CalcTeX
 
@@ -23,7 +25,7 @@ editor for LaTeX formulas.
 ![img](demos/normal.gif)
 
 
-<a id="org874df55"></a>
+<a id="orgc1b4053"></a>
 
 ## Why a WYSIWYG equation editor?
 
@@ -51,7 +53,7 @@ where you are in the formula, alert you to any mistakes, or provide opportunity
 for reflecting on the content of what you're typing.
 
 
-<a id="orga8a7270"></a>
+<a id="orge78610c"></a>
 
 ### A Tool of Thought
 
@@ -61,7 +63,7 @@ the computer, we deserve an editor that **augments** the tool of mathematical
 notation, not one that suffocates it.
 
 
-<a id="org07d9fdb"></a>
+<a id="org2d0c7db"></a>
 
 ### No clicking
 
@@ -71,12 +73,12 @@ for Emacs Calc, which provides a huge number of key commands for manipulating
 equations.
 
 
-<a id="orgd09014c"></a>
+<a id="org03e079d"></a>
 
 # Installation
 
 
-<a id="org6926c3b"></a>
+<a id="org2a81c17"></a>
 
 ## MacOS
 
@@ -94,7 +96,7 @@ Check that you have them installed:
     tlmgr -version
 
 
-<a id="org440a3be"></a>
+<a id="org2f2223a"></a>
 
 ## LaTeX Packages
 
@@ -129,7 +131,7 @@ However, be aware that doing so may compromise some facilities of CalcTeX,
 particularly its selection handling.
 
 
-<a id="org5659811"></a>
+<a id="org6636708"></a>
 
 # Usage
 
@@ -139,7 +141,7 @@ type a numeral to begin a numeric entry. Refer to the [Calc manual](https://www.
 mathematical commands that are available.
 
 
-<a id="orgd423693"></a>
+<a id="org6271775"></a>
 
 ## Integrating with documents
 
@@ -149,9 +151,14 @@ LaTeX or Org buffer, move point to a LaTeX formula environment, and type
 contents of the equation in the buffer you are editing.
 
 
-<a id="org53921d2"></a>
+<a id="org92480f0"></a>
 
 ## Display options
+
+
+<a id="orga73e863"></a>
+
+### Scaling
 
 CalcTeX currently offers two image format options: `png` and `imagemagick`. The
 default is `imagemagick`, unless your Emacs is compiled without support. To
@@ -169,4 +176,14 @@ The first controls the amount by which the "base" dots-per-inch value of
 `calctex-base-dpi` is increased, to improve resolution of the rendered image.
 This will have an immediate effect on the size of the overlay that appears in
 the buffer, which can be corrected by adjusting `calctex-imagemagick-png-scaling`.
+
+
+<a id="org0c04504"></a>
+
+### Other
+
+The variable `calctex-foreground-darken-percent` adjusts the foreground color of
+the rendered images. The default color is the same as the foreground color of
+the default face. This may appear too light for the font used by LaTeX, so it
+may be darkened or lightened to improve the match with the rest of the buffer.
 

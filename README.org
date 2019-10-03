@@ -130,6 +130,7 @@ LaTeX or Org buffer, move point to a LaTeX formula environment, and type
 contents of the equation in the buffer you are editing.
 
 ** Display options
+*** Scaling
 CalcTeX currently offers two image format options: ~png~ and ~imagemagick~. The
 default is ~imagemagick~, unless your Emacs is compiled without support. To
 disable ~imagemagick~ even if it is supported:
@@ -148,3 +149,8 @@ The first controls the amount by which the "base" dots-per-inch value of
 ~calctex-base-dpi~ is increased, to improve resolution of the rendered image.
 This will have an immediate effect on the size of the overlay that appears in
 the buffer, which can be corrected by adjusting ~calctex-imagemagick-png-scaling~.
+*** Other
+The variable ~calctex-foreground-darken-percent~ adjusts the foreground color of
+the rendered images. The default color is the same as the foreground color of
+the default face. This may appear too light for the font used by LaTeX, so it
+may be darkened or lightened to improve the match with the rest of the buffer.
