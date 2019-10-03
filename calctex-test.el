@@ -128,7 +128,7 @@
          (assert-overlay-image-equals ov "2a.png")
          (should (equal (overlay-display-property ov :type) 'imagemagick))
          (should (equal (overlay-display-property ov :format) 'png))
-         (should (equal (overlay-display-property ov :scale) calctex-imagemagick-png-scaling))))
+         (should (equal (overlay-display-property ov :scale) (/ calctex-imagemagick-png-scaling calctex-base-imagemagick-png-scaling)))))
      )))
 
 (ert-deftest creates-parents-of-image-cache ()

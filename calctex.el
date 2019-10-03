@@ -29,6 +29,7 @@
 
 (require 'subr-x)
 (require 'calc-sel)
+(require 'color)
 
 (defcustom calctex-base-dpi 150
   "The base dots-per-inch measurement to use for png rendering.
