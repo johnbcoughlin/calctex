@@ -32,3 +32,7 @@ org_calctex_test: clean_workdir reference_images resources/test.org
 		--eval="(setq temporary-file-directory \"$$(pwd)/workdir\")" \
 		-f toggle-debug-on-error \
 		-f ert-run-tests-batch-and-exit
+
+calctex_contrib_test: calctex-contrib-test.el
+	emacs -batch -L `pwd` -l ert.el -l calctex-contrib-test.el \
+		-f ert-run-tests-batch-and-exit

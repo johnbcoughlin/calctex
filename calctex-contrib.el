@@ -15,15 +15,19 @@
 (defmath deedeexf (f x) nil) ; d/dx f
 (defmath delfdelx (f x) nil) ; ∂f/∂x
 (defmath deldelx (f x) nil) ; ∂/∂x f
+(defmath vec (x) nil) ; \vec{x}
 
 ;;; Display Rewrite Rules
 (defvar calctex-contrib-disprules ()
   "The set of default display rewrite rules.")
 (setq calctex-contrib-disprules
   (list
-   "deriv(f, x) := deefdeex(f, x) :: variable(f) :: dscalar(apply(f, []))"
-   "deriv(apply(f, args), x) := deedeexf(f, x) :: dscalar(apply(f, args))"
-   "deriv(apply(f, args), x) := deldelxf(f, x) :: lnot(dscalar(apply(f, args)))"
+   "iterations(1)"
+   "x := vec(x) :: dvector(x) :: lnot(dmatrix(x))"
+   "tderiv(f, x) := deefdeex(f, x) :: variable(f)"
+   "tderiv(apply(f, args), x) := deedeexf(apply(f, args), x)"
+   "deriv(f, x) := delfdelx(f, x) :: variable(f)"
+   "deriv(apply(f, args), x) := deldelxf(apply(f, args), x)"
    )
   )
 
@@ -164,16 +168,72 @@
        (setcdr form-with-arg-count
                (list 'lambda calc-user-formula-alist (calc-fix-user-formula comp))))))))))
 ;;;; Compositions
-(let ((comp (calc-eval "choriz([string(\"\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
-  (calctex-contrib-define-composition "latex" 'calcFunc-paren comp '(x)))
-(let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\mathrm{d}\"), f, string(\"}{\\\\mathrm{d}\"), x, string(\"}\")])" 'raw)))
-  (calctex-contrib-define-composition "latex" 'calcFunc-deefdeex comp '(f x)))
-(let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\mathrm{d}}{\\\\mathrm{d}\"), x, string(\"}\"), f])" 'raw)))
-  (calctex-contrib-define-composition "latex" 'calcFunc-deedeexf comp '(f x)))
-(let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\partial}{\\\\partial \"), x, string(\"}\"), f])" 'raw)))
-  (calctex-contrib-define-composition "latex" 'calcFunc-deldelxf comp '(f x)))
-;;; Declarations
+(defun calctex-contrib-common-compositions ()
+  (let ((comp (calc-eval "choriz([string(\"\\\\vec{\"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-vec comp '(x)))
 
+  (let ((comp (calc-eval "choriz([string(\"\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-paren comp '(x)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\mathrm{d}\"), f, string(\"}{\\\\mathrm{d}\"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-deefdeex comp '(f x)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\mathrm{d}}{\\\\mathrm{d}\"), x, string(\"}\"), f])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-deedeexf comp '(f x)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\partial \"), f, string(\"}{\\\\partial \"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-delfdelx comp '(f x)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\partial}{\\\\partial \"), x, string(\"}\"), f])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-deldelxf comp '(f x))))
+;;; Declarations
+;;;; Helper functions
+(defmath dmatrix (a)
+  (interactive 1 "dmatrix")
+    (if (check-declared-matrixp a) 1
+      0))
+
+(defmath dvector (a)
+  (interactive 1 "dvector")
+  (if (check-declared-vectorp a) 1 0))
+
+;;;;; Has the variable a been declared as a vector?
+(defun calcFunc-check-declared-vectorp (a)
+  (cond ((Math-objectp a) nil)
+        (t
+         (let ((decl (if (eq (car a) 'var)
+                         (or (assq (nth 2 a) math-decls-cache)
+                             math-decls-all)
+                       (assq (car a) math-decls-cache)))
+               val)
+           (cond
+            ((memq 'vector (nth 1 decl)) t)
+            ;; ((and (eq (car a) 'var)
+            ;;       (symbolp (nth 2 a))
+            ;;       (boundp (nth 2 a))
+            ;;       (setq val (symbol-value (nth 2 a))))
+            ;;  (math-check-known-vectorp val))
+            (t nil))))))
+
+;;;;; Has the variable a been declared as a matrix?
+(defun calcFunc-check-declared-matrixp (a)
+  (cond ((Math-objectp a) nil)
+        (t
+         (let ((decl (if (eq (car a) 'var)
+                         (or (assq (nth 2 a) math-decls-cache)
+                             math-decls-all)
+                       (assq (car a) math-decls-cache)))
+               val)
+           (cond
+            ((memq 'matrix (nth 1 decl)) t)
+            ;; ((and (eq (car a) 'var)
+            ;;       (symbolp (nth 2 a))
+            ;;       (boundp (nth 2 a))
+            ;;       (setq val (symbol-value (nth 2 a))))
+            ;;  (math-check-known-vectorp val))
+            (t nil))))))
+
+;;;; Contexts
 (defvar calctex-contrib-common-decls ()
   "The list of declarations common to all calctex contexts.")
 
@@ -183,11 +243,12 @@
 (defun calctex-context-complex-analysis ()
   (setq calctex-contrib-context-decls
         (list
-         "[[x, y, theta], real]"
-         "[rho, [0 .. inf)]"
+         "[[x, y, theta], [real, const]]"
+         "[rho, [[0 .. inf), const]]"
          "[u(x, y), real]"
          "[v(x, y), real]"
-         "[[u, v], real]"))
+         "[[u, v], real]"
+         ))
   (calctex-contrib-refresh))
 
 (defun calctex-context-linear-algebra ()
@@ -209,6 +270,7 @@
 ;;; Variable lifecycles
 
 (defun calctex-contrib-refresh ()
+  (calctex-contrib-common-compositions)
   (setq var-Decls
         (let ((formatted (format "[%s]" (mapconcat #'(lambda (decl) (format "%s" decl))
                                                    (append calctex-contrib-common-decls
@@ -223,3 +285,5 @@
 
 (calctex-context-complex-analysis)
 (calctex-contrib-refresh)
+
+(provide 'calctex-contrib)
