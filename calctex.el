@@ -269,7 +269,7 @@ Renders line overlays in the calc buffer."
                (overlay-put ov 'calctex-overlay-id (sha1 (buffer-substring beg end)))
                ov)))))
 
-(defun calctex--render-overlay-at (tex ov)
+(defun calctex--render-overlay-at (tex ov margin)
   "Render LaTeX source TEX onto the overlay OV."
   (let* ((img (funcall calctex-render-process tex))
          (img-file (plist-get img 'file))
@@ -279,10 +279,10 @@ Renders line overlays in the calc buffer."
           (overlay-put
            ov
            'display
-           (calctex--image-overlay-display img-type img-file)))
+           (calctex--image-overlay-display img-type img-file margin)))
       (setq disable-point-adjustment t))))
 
-(defun calctex--image-overlay-display (img-type img-file)
+(defun calctex--image-overlay-display (img-type img-file margin)
   "Return the 'display property of an image overlay.
 
 Returns a 'display form for IMG-FILE rendered as IMG-TYPE. If
@@ -295,12 +295,12 @@ imagemagick support is enabled, use that, otherwise, fall back to
             :file img-file
             :ascent 'center
             :scale (/ calctex-imagemagick-png-scaling calctex-base-imagemagick-png-scaling)
-            :margin 1)
+            :margin margin)
     (list 'image
           :type img-type
           :file img-file
           :ascent 'center
-          :margin 1)))
+          :margin margin)))
 
 (defun calctex--imagemagick-support ()
   "Whether imagemagick support for images is available and enabled."
@@ -375,7 +375,7 @@ Called by `calctex--create-line-overlays'."
            (tex (format "\\[ %s \\]" selected-line-contents)))
       (progn
         (move-overlay ov line-start line-end)
-        (calctex--render-overlay-at tex ov))))
+        (calctex--render-overlay-at tex ov 2))))
 
 (defun calctex--lift-selection (text line-start line-end)
   "Wrap selected portions of a LaTeX formula in a color directive.

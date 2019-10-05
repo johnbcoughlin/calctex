@@ -51,8 +51,13 @@
     (calctex--get-or-create-overlay beg end)))
 
 (defun calctex--render-overlay-at-frag (frag ov)
-  (let* ((tex (org-element-property :value frag)))
-    (calctex--render-overlay-at tex ov)))
+  (let* ((tex (org-element-property :value frag))
+         (margin (if (or (string-prefix-p "\\[" tex)
+                         (string-prefix-p "\begin" tex))
+                     4
+                   1)))
+    (message "margin: %s" margin)
+    (calctex--render-overlay-at tex ov margin)))
 
 (defun calctex-latex-fragment-at-point ()
   "Returns the LaTeX fragment at point, or nil if none"
