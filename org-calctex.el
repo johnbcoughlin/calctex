@@ -223,6 +223,17 @@ jumps back to register `f'."
     ("o" calctex-insert-display-formula "Insert \\[ display formula \\]" :color blue)
     ("q" nil "quit" :color blue)))
 
-(define-key calctex-mode-map (kbd "s-f") 'hypertex-hydra/body)
+(define-key calctex-mode-map (kbd "s-f") 'calctex-hydra/body)
+
+(defun calctex-move-to-end-of-frag ()
+  (let ((ov (org-calctex-overlay-at-point)))
+    (if ov (goto-char (overlay-end ov)))))
+
+(with-eval-after-load 'evil-org
+  (evil-define-key 'normal evil-org-mode-map
+    "o" '(lambda ()
+           (interactive)
+           (calctex-move-to-end-of-frag)
+           (evil-org-eol-call 'clever-insert-item))))
 
 (provide 'org-calctex)

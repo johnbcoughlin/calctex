@@ -280,7 +280,7 @@ Renders line overlays in the calc buffer."
            ov
            'display
            (calctex--image-overlay-display img-type img-file margin)))
-      (setq disable-point-adjustment t))))
+      )))
 
 (defun calctex--image-overlay-display (img-type img-file margin)
   "Return the 'display property of an image overlay.
