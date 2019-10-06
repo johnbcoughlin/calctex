@@ -57,6 +57,7 @@
                      4
                    1)))
     (message "margin: %s" margin)
+    (overlay-put ov 'modification-hooks '(calctex--modification-hook))
     (calctex--render-overlay-at tex ov margin)))
 
 (defun calctex-latex-fragment-at-point ()
@@ -68,6 +69,7 @@
       nil)))
 
 (defun calctex--modification-hook (ov after beg end &optional len)
+  (message "overlay modified: %s" ov)
   (condition-case nil
       (calctex--render-overlay-at-point)
     (error (progn
@@ -100,6 +102,10 @@
     (if ov (delete-overlay ov)
       (calctex--render-overlay-at-point))))
 
+(defun calctex-move-to-end-of-frag ()
+  (let ((ov (org-calctex-overlay-at-point)))
+    (if ov (goto-char (overlay-end ov)))))
+
 (defun calctex--marker-within-frag (marker frag)
   (if marker
       (let* ((begin (org-element-property :begin frag))
@@ -119,6 +125,8 @@
              (type (org-element-type context)))
         (when (memq type '(latex-environment latex-fragment))
           (calc-embedded nil))))))
+
+;;; Movement
 
 (defun org-calctex-next-formula ()
   (interactive)
@@ -156,6 +164,8 @@
         (goto-char begin))
       (setq disable-point-adjustment t))))
 
+;;; Activate/Accept
+
 ;; Activate the formula at point with calc Embedded mode.
 (defun org-calctex-activate-formula ()
   "Activate the formula at point with calc Embedded mode,
@@ -185,6 +195,8 @@ jumps back to register `f'."
   (let ((frag (calctex-latex-fragment-at-point)))
     (goto-char (org-element-property :end frag))))
 
+;;; Insertion
+
 (defun calctex-append-inline-formula ()
   (interactive)
   (let* ((frag (calctex-latex-fragment-at-point)))
@@ -212,28 +224,47 @@ jumps back to register `f'."
       (calctex--render-overlay-at-point)
       (calc))))
 
-(with-eval-after-load 'hydra 
-  (defhydra calctex-hydra (:color red)
-    "foo"
-    ("h" calctex-hide-overlay-at-point "show/hide overlays")
-    ("n" org-calctex-next-formula "next")
-    ("p" org-calctex-prev-formula "prev")
-    ("r" calctex-activate-formula "replace" :color blue)
-    ("a" calctex-append-inline-formula "Append $formula$" :color blue)
-    ("o" calctex-insert-display-formula "Insert \\[ display formula \\]" :color blue)
-    ("q" nil "quit" :color blue)))
-
-(define-key calctex-mode-map (kbd "s-f") 'calctex-hydra/body)
-
-(defun calctex-move-to-end-of-frag ()
-  (let ((ov (org-calctex-overlay-at-point)))
-    (if ov (goto-char (overlay-end ov)))))
-
 (with-eval-after-load 'evil-org
   (evil-define-key 'normal evil-org-mode-map
     "o" '(lambda ()
            (interactive)
            (calctex-move-to-end-of-frag)
            (evil-org-eol-call 'clever-insert-item))))
+
+;;; Post-insert hooks
+
+(defun calctex-mode-hook-hook ()
+  (message "hooked: %s" calctex-mode)
+  (add-hook 'post-self-insert-hook #'org-calctex-complete-and-activate-formula nil t))
+(add-hook 'calctex-mode-hook #'calctex-mode-hook-hook)
+
+(defun org-calctex-complete-and-activate-formula ()
+  (message "char: %s" (char-before))
+  (cond ((equal (char-before) 36) (org-calctex--complete-inline-formula))
+        ((equal (char-before) 91) (org-calctex--maybe-complete-and-activate-display-formula))))
+
+(defun org-calctex--complete-inline-formula ()
+  (save-excursion
+    (backward-char)
+    (when (calctex-latex-fragment-at-point)
+      (org-calctex-hide-overlay-at-point))))
+
+(defun org-calctex--maybe-complete-and-activate-display-formula ()
+  ; Check if we just typed "\["
+  (if (save-excursion
+        (backward-char)
+        (equal (char-before) 92))
+      (progn
+        ; Ensure the equation is on its own line
+        (save-excursion
+          (backward-char 2)
+          (unless (equal (char-before) 10)
+            (newline)))
+        (save-excursion
+          (move-end-of-line nil)
+          (insert "\\]")
+          (org-calctex-hide-overlay-at-point)
+          (org-calctex-activate-formula))
+        )))
 
 (provide 'org-calctex)
