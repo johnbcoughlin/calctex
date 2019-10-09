@@ -372,7 +372,7 @@ Called by `calctex--create-line-overlays'."
            (line-contents (buffer-substring line-start line-end))
            (selected-line-contents (calctex--lift-selection line-contents line-start line-end))
            (ov (calctex--get-or-create-overlay line-start line-end))
-           (tex (format "\\[ %s \\]" selected-line-contents)))
+           (tex (format "\\begin{align*} %s \\end{align*}" selected-line-contents)))
       (progn
         (move-overlay ov line-start line-end)
         (calctex--render-overlay-at tex ov 2))))

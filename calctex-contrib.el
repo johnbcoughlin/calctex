@@ -2,13 +2,18 @@
 
 (defun calctex-contrib-prepare ()
   (unless (get-buffer "*Calculator*") (calc))
-  (calc-latex-language nil)
-  )
+  (calc-latex-language nil))
 
 ;;; Functions
-(defmath paren (f)
-  (interactive 1 "paren")
-  nil)
+(defun calctex-contrib-define-functions ()
+  (defmath paren (f)
+    (interactive 1 "paren")
+    nil)
+
+  (defmath align-equal-to (a b)
+    (interactive 2)
+    nil)
+  )
 
 ;;;; Functions that are only used to rewrite into for display purposes
 (defmath deefdeex (f x) nil) ; df/dx
@@ -169,12 +174,15 @@
                (list 'lambda calc-user-formula-alist (calc-fix-user-formula comp))))))))))
 ;;;; Compositions
 (defun calctex-contrib-common-compositions ()
+;;;;; \vec{} wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\vec{\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition "latex" 'calcFunc-vec comp '(x)))
 
+;;;;; paren wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
     (calctex-contrib-define-composition "latex" 'calcFunc-paren comp '(x)))
 
+;;;;; Derivatives
   (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\mathrm{d}\"), f, string(\"}{\\\\mathrm{d}\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition "latex" 'calcFunc-deefdeex comp '(f x)))
 
@@ -185,7 +193,13 @@
     (calctex-contrib-define-composition "latex" 'calcFunc-delfdelx comp '(f x)))
 
   (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\partial}{\\\\partial \"), x, string(\"}\"), f])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-deldelxf comp '(f x))))
+    (calctex-contrib-define-composition "latex" 'calcFunc-deldelxf comp '(f x)))
+
+;;;;; Align-eq
+  ;; ridiculously, this just does two backslashes at the end of the line.
+  (let ((comp (calc-eval "choriz([a, string(\" &= \"), b, string(\" \\\\\\\\ \\\\newline\")])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-align-equal-to comp '(a b))
+    ))
 ;;; Declarations
 ;;;; Helper functions
 (defmath dmatrix (a)
@@ -285,5 +299,12 @@
 
 (calctex-context-complex-analysis)
 (calctex-contrib-refresh)
+
+(put 'calc-define 'calctex-contrib
+     '(progn
+        (calctex-contrib-define-functions)
+        ))
+
+(run-hooks 'calc-check-defines)
 
 (provide 'calctex-contrib)
