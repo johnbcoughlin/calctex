@@ -77,7 +77,7 @@ This value may be negative, in which case it lightens the foreground."
   :type '(integer)
   :group 'calctex)
 
-(defvar calctex-render-process #'calctex-default-render-process
+(defvar calctex-render-process #'calctex-texd-render-process
   "Function that renders a snippet of LaTeX source into an image.
 Will be called with SRC, the LaTeX source code. Should return a
 plist with properties 'file and 'type, representing the path to the
@@ -171,6 +171,73 @@ background and foreground color definitions, then by
           (unless (file-exists-p tofile)
             (error "Error converting dvi to png. Check *CalcTeX Log* for command output")))))
     `(file ,tofile type png)))
+
+(defvar calctex-latex-proc nil)
+(defvar calctex-dvichop-proc nil)
+(defvar calctex-workdir nil)
+
+(defun calctex-accept-latex-output (proc string)
+  (let ((err (string-match-p "^!" string)))
+    (if err
+        (setq calctex-latex-success nil)
+      (setq calctex-latex-success t))))
+
+(defun calctex-setup-texd ()
+  (delete-process "*CalcTeX-LaTeX*")
+  (delete-process "*CalcTeX-DVIChop*")
+  (let* ((tmpdir (make-temp-file "calctex" t))
+         (default-directory tmpdir))
+    (setq calctex-workdir tmpdir)
+    (shell-command "rm -f calctex.dvi" "*CalcTeX-DVIChop*")
+    (shell-command "mkfifo calctex.dvi" "*CalcTeX-DVIChop*")
+    (let* (        (latex-proc (start-file-process
+                                "CalcTeX-LaTeX"
+                                "*CalcTeX-LaTeX*"
+                                "latex" "-jobname" "calctex" "-ipc"))
+                   (dvichop-proc (start-file-process
+                                  "CalcTeX-DVIChop"
+                                  "*CalcTeX-DVIChop*"
+                                  "~/src/texd/dvichop" "calctex.dvi"))
+                   )
+      (setq calctex-latex-proc latex-proc)
+      (add-function :after (process-filter latex-proc) #'calctex-accept-latex-output)
+      (setq calctex-dvichop-proc dvichop-proc)
+      (process-send-string latex-proc calctex-format-latex-header)
+      (process-send-string latex-proc "\\usepackage{/Users/jack/src/texd/dvichop}\n")
+      (process-send-string latex-proc "\\let\\DviFlush\\relax\n")
+      (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
+      (process-send-string latex-proc "\\begin{document}\n")
+      (process-send-string latex-proc "\\DviOpen\n"))))
+
+(calctex-setup-texd)
+
+(defun calctex-texd-render-process (src)
+  (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
+         (bg (calctex--latex-color :background))
+         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) calctex-format-latex-header))))
+         (tofile (expand-file-name (format "%s.png" hash) calctex-workdir))
+         )
+    (message "%s" fg)
+    (process-send-string calctex-latex-proc (format "\\definecolor{fg}{rgb}{%s}
+                                                    \\definecolor{bg}{rgb}{%s}" fg bg))
+    (process-send-string calctex-latex-proc "\\DviBegin\\shipout\\vbox{")
+    (process-send-string calctex-latex-proc "\\pagecolor{bg}{\\color{fg}")
+    (process-send-string calctex-latex-proc src)
+    (process-send-string calctex-latex-proc "}}\\DviEnd\n")
+    (unless (file-exists-p tofile)
+      (accept-process-output calctex-latex-proc 0.3)
+      (if calctex-latex-success
+          (let* ((default-directory calctex-workdir)
+                 (dvipng-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s.png 0.dvi"
+                                     fg bg (calctex--dpi) hash)))
+            (save-window-excursion
+              (shell-command dvipng-cmd (get-buffer-create "*CalcTeX-DVIPNG*"))
+              (unless (file-exists-p tofile)
+                (error "Error converting dvi to png. Check *CalcTeX-DVIPNG* for command output"))))
+        (progn
+          (calctex-setup-texd)
+          (error "Error processing LaTeX. Check *CalcTeX-LaTeX* for output"))))
+      `(file ,tofile type png)))
 
 (defvar calctex--calc-line-numbering nil
   "Sidechannel used to store the value of variable `calc-line-numbering'.
