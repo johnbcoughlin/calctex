@@ -68,6 +68,8 @@
         ctx
       nil)))
 
+(add-hook 'fill-nobreak-predicate #'calctex-latex-fragment-at-point)
+
 (defun calctex--modification-hook (ov after beg end &optional len)
   (message "overlay modified: %s" ov)
   (condition-case nil
