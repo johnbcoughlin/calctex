@@ -13,6 +13,10 @@
   (defmath align-equal-to (a b)
     (interactive 2)
     nil)
+
+  (defmath adjoint (A)
+    (interactive 1 "adjoint")
+    (transpose A))
   )
 
 ;;;; Functions that are only used to rewrite into for display purposes
@@ -177,6 +181,10 @@
 ;;;;; \vec{} wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\vec{\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition "latex" 'calcFunc-vec comp '(x)))
+
+;;;;; Matrices
+  (let ((comp (calc-eval "choriz([A, string(\"^* \")])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-adjoint comp '(A)))
 
 ;;;;; paren wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
