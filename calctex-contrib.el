@@ -17,6 +17,10 @@
   (defmath adjoint (A)
     (interactive 1 "adjoint")
     (transpose A))
+
+  (defmath laplacian (f)
+    (interactive 1 "laplacian")
+    nil)
   )
 
 ;;;; Functions that are only used to rewrite into for display purposes
@@ -202,6 +206,9 @@
 
   (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\partial}{\\\\partial \"), x, string(\"}\"), f])" 'raw)))
     (calctex-contrib-define-composition "latex" 'calcFunc-deldelxf comp '(f x)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\nabla^2 \"), f])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-laplacian comp '(f)))
 
 ;;;;; Align-eq
   ;; ridiculously, this just does two backslashes at the end of the line.
