@@ -19,8 +19,8 @@
 (require 'test-utils)
 (require 'ert)
 
-(defun with-org-calctex-test-harness (body)
-  (find-file "resources/test.org")
+(defun with-org-calctex-test-harness (body &optional file)
+  (find-file (if file file "resources/test.org"))
   (revert-buffer nil t)
   (set-face-attribute 'default nil :foreground "black" :background "white")
   (calctex-mode 1)
@@ -79,6 +79,25 @@
        (progn
          (should (equal (point) (+ formula-start 4 4)))
          (should (equal (buffer-substring formula-start (point)) "\\[f(x)\\]")))))))
+
+(ert-deftest test-jump-to-align ()
+  (with-org-calctex-test-harness
+   (lambda ()
+     (org-calctex-next-formula)
+     (should (equal (point) 13)))
+   "resources/alignstar.org"))
+
+(ert-deftest test-activate-align ()
+  (with-org-calctex-test-harness
+   (lambda ()
+     (org-calctex-next-formula)
+     (let ((formula-start (point)))
+     (org-calctex-activate-formula)
+     (execute-kbd-macro (kbd "' j <RET>"))
+     (execute-kbd-macro (kbd "+"))
+     (org-calctex-accept-formula)
+     ))
+   "resources/alignstar.org"))
 
 (ert-deftest test-show-hide-overlay ()
   (with-org-calctex-test-harness

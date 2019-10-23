@@ -39,7 +39,7 @@
 %s
 
 ========================================
-" (with-current-buffer "*CalcTeX Log*"
+" (with-current-buffer "*CalcTeX-DVIPNG*"
     (buffer-string))))))
 
 (defun overlay-display-property (ov prop)

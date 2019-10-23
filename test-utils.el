@@ -7,7 +7,15 @@
          (file-comp (format "cmp %s %s/%s" actual-file calctex-test-resources-dir reference-image))
          (equality (shell-command file-comp)))
     (if (not (= equality 0))
-        (message "command returned nonzero exit code: %s" file-comp)
+        (progn
+        (message "
+==========Render error output:==========
+%s
+
+========================================
+" (with-current-buffer "*CalcTeX-DVIPNG*"
+    (buffer-string)))
+        (message "command returned nonzero exit code: %s" file-comp))
       ())
     (should (= equality 0))))
 

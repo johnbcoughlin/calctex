@@ -183,8 +183,11 @@ background and foreground color definitions, then by
       (setq calctex-latex-success t))))
 
 (defun calctex-setup-texd ()
-  (delete-process "*CalcTeX-LaTeX*")
-  (delete-process "*CalcTeX-DVIChop*")
+  (condition-case nil
+      (progn
+        (delete-process "*CalcTeX-LaTeX*")
+        (delete-process "*CalcTeX-DVIChop*"))
+      (error nil))
   (let* ((tmpdir (make-temp-file "calctex" t))
          (default-directory tmpdir))
     (setq calctex-workdir tmpdir)
@@ -197,7 +200,7 @@ background and foreground color definitions, then by
                    (dvichop-proc (start-file-process
                                   "CalcTeX-DVIChop"
                                   "*CalcTeX-DVIChop*"
-                                  "~/src/texd/dvichop" "calctex.dvi"))
+                                  "/Users/jack/src/texd/dvichop" "calctex.dvi"))
                    )
       (setq calctex-latex-proc latex-proc)
       (add-function :after (process-filter latex-proc) #'calctex-accept-latex-output)
@@ -207,9 +210,9 @@ background and foreground color definitions, then by
       (process-send-string latex-proc "\\let\\DviFlush\\relax\n")
       (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
       (process-send-string latex-proc "\\begin{document}\n")
-      (process-send-string latex-proc "\\DviOpen\n"))))
-
-(calctex-setup-texd)
+      (process-send-string latex-proc "\\DviOpen\n")
+      (sit-for 1)
+      (message "all set up and ready to go"))))
 
 (defun calctex-texd-render-process (src)
   (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
@@ -217,7 +220,6 @@ background and foreground color definitions, then by
          (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) calctex-format-latex-header))))
          (tofile (expand-file-name (format "%s.png" hash) calctex-workdir))
          )
-    (message "%s" fg)
     (process-send-string calctex-latex-proc (format "\\definecolor{fg}{rgb}{%s}
                                                     \\definecolor{bg}{rgb}{%s}" fg bg))
     (process-send-string calctex-latex-proc "\\DviBegin\\shipout\\vbox{")
@@ -231,7 +233,8 @@ background and foreground color definitions, then by
                  (dvipng-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s.png 0.dvi"
                                      fg bg (calctex--dpi) hash)))
             (save-window-excursion
-              (shell-command dvipng-cmd (get-buffer-create "*CalcTeX-DVIPNG*"))
+              (let ((inhibit-message t))
+                (shell-command dvipng-cmd (get-buffer-create "*CalcTeX-DVIPNG*")))
               (unless (file-exists-p tofile)
                 (error "Error converting dvi to png. Check *CalcTeX-DVIPNG* for command output"))))
         (progn
@@ -262,6 +265,7 @@ then restore its value.")
   :keymap (make-sparse-keymap)
   (if calctex-mode
       (progn
+        (calctex-setup-texd)
         (add-hook 'pre-command-hook #'calctex--precommand)
         (add-hook 'post-command-hook #'calctex--postcommand)
         (add-hook 'post-self-insert-hook #'calctex--postcommand)
