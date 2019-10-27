@@ -234,6 +234,12 @@
 
 ;;; Declarations
 ;;;; Helper functions
+(defun calctex-reload-declarations-advice (&rest r)
+  (math-setup-declarations))
+
+(advice-add 'calc-declare-variable :after #'calctex-reload-declarations-advice)
+(advice-add 'calc-edit-Decls :after #'calctex-reload-declarations-advice)
+
 (defmath dmatrix (a)
   (interactive 1 "dmatrix")
     (if (check-declared-matrixp a) 1
