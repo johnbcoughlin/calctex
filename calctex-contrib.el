@@ -21,6 +21,18 @@
   (defmath laplacian (f)
     (interactive 1 "laplacian")
     nil)
+
+  (defmath limit (f var bound)
+    nil)
+
+  (defun calc-limit (var bound)
+    (interactive "sTake the limit with respect to: \nsAs %s goes to: \n")
+    (calc-slow-wrapper
+     (calc-enter-result 1 "lim"
+                        (cons 'calcFunc-limit
+                              (list (calc-top-list-n 1)
+                                    (math-read-expr var)
+                                    (math-read-expr bound))))))
   )
 
 ;;;; Functions that are only used to rewrite into for display purposes
@@ -215,6 +227,11 @@
   (let ((comp (calc-eval "choriz([a, string(\" &= \"), b, string(\" \\\\\\\\ \\\\newline\")])" 'raw)))
     (calctex-contrib-define-composition "latex" 'calcFunc-align-equal-to comp '(a b))
     ))
+;;;;; Limit
+  (let ((comp (calc-eval "choriz([string(\"\\\\lim_{\"), var, string(\" \\\\rightarrow \"), bound, string(\"}\"), f])" 'raw)))
+    (calctex-contrib-define-composition "latex" 'calcFunc-limit comp '(f var bound)))
+  )
+
 ;;; Declarations
 ;;;; Helper functions
 (defmath dmatrix (a)
