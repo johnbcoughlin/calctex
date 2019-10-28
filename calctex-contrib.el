@@ -170,21 +170,21 @@
 
 ;;; Compositions
 ;;;; Helper function
-(defun calctex-contrib-define-composition (lang func comp arglist)
+(defun calctex-contrib-define-composition (func comp arglist)
   (calc-wrapper
    (let* ((comps (get func 'math-compose-forms))
           (math-arglist nil)
           (calc-user-formula-alist nil)
           entry entry2)
      (if (math-zerop comp)
-	       (if (setq entry (assq calc-language comps))
+	       (if (setq entry (assq 'latex comps))
 	           (put func 'math-compose-forms (delq entry comps)))
      (calc-default-formula-arglist comp)
      (setq calc-user-formula-alist arglist)
-     (let* ((forms-list (assq calc-language comps)))
+     (let* ((forms-list (assq 'latex comps)))
        (if (not forms-list)
            (put func 'math-compose-forms
-                (cons (setq forms-list (list calc-language)) comps))
+                (cons (setq forms-list (list 'latex)) comps))
          (let ((form-with-arg-count (assq (length calc-user-formula-alist) (cdr entry))))
            (if (not form-with-arg-count)
                (setcdr forms-list
@@ -196,40 +196,43 @@
 (defun calctex-contrib-common-compositions ()
 ;;;;; \vec{} wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\vec{\"), x, string(\"}\")])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-vec comp '(x)))
+    (calctex-contrib-define-composition 'calcFunc-vec comp '(x)))
 
 ;;;;; Matrices
-  (let ((comp (calc-eval "choriz([A, string(\"^* \")])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-adjoint comp '(A)))
+  (let ((comp (calc-eval "choriz([A, string(\"^*\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-adjoint comp '(A)))
 
 ;;;;; paren wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-paren comp '(x)))
+    (calctex-contrib-define-composition 'calcFunc-paren comp '(x)))
 
 ;;;;; Derivatives
   (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\mathrm{d}\"), f, string(\"}{\\\\mathrm{d}\"), x, string(\"}\")])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-deefdeex comp '(f x)))
+    (calctex-contrib-define-composition 'calcFunc-deefdeex comp '(f x)))
 
   (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\mathrm{d}}{\\\\mathrm{d}\"), x, string(\"}\"), f])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-deedeexf comp '(f x)))
+    (calctex-contrib-define-composition 'calcFunc-deedeexf comp '(f x)))
 
   (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\partial \"), f, string(\"}{\\\\partial \"), x, string(\"}\")])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-delfdelx comp '(f x)))
+    (calctex-contrib-define-composition 'calcFunc-delfdelx comp '(f x)))
 
   (let ((comp (calc-eval "choriz([string(\"\\\\frac{\\\\partial}{\\\\partial \"), x, string(\"}\"), f])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-deldelxf comp '(f x)))
+    (calctex-contrib-define-composition 'calcFunc-deldelxf comp '(f x)))
 
   (let ((comp (calc-eval "choriz([string(\"\\\\nabla^2 \"), f])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-laplacian comp '(f)))
+    (calctex-contrib-define-composition 'calcFunc-laplacian comp '(f)))
 
 ;;;;; Align-eq
   ;; ridiculously, this just does two backslashes at the end of the line.
   (let ((comp (calc-eval "choriz([a, string(\" &= \"), b, string(\" \\\\\\\\ \\\\newline\")])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-align-equal-to comp '(a b))
-    ))
+    (calctex-contrib-define-composition 'calcFunc-align-equal-to comp '(a b))
+    )
+;;;;; Abs and norm
+  (let ((comp (calc-eval "choriz([string(\"\\\\left|\"), x, string(\"\\\\right|\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-abs comp '(x)))
 ;;;;; Limit
   (let ((comp (calc-eval "choriz([string(\"\\\\lim_{\"), var, string(\" \\\\rightarrow \"), bound, string(\"}\"), f])" 'raw)))
-    (calctex-contrib-define-composition "latex" 'calcFunc-limit comp '(f var bound)))
+    (calctex-contrib-define-composition 'calcFunc-limit comp '(f var bound)))
   )
 
 ;;; Declarations
