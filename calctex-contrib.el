@@ -36,6 +36,7 @@
   )
 
 ;;;; Functions that are only used to rewrite into for display purposes
+(defmath null (x) nil) ; Invisible; useful for the "upper" bound of an integral over a surface
 (defmath deefdeex (f x) nil) ; df/dx
 (defmath deedeexf (f x) nil) ; d/dx f
 (defmath delfdelx (f x) nil) ; ∂f/∂x
@@ -194,6 +195,13 @@
                (list 'lambda calc-user-formula-alist (calc-fix-user-formula comp))))))))))
 ;;;; Compositions
 (defun calctex-contrib-common-compositions ()
+  (let ((comp (calc-eval "choriz([string(\"\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-null comp '()))
+;;;;; Selections
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\colornucleus{red}{\"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-selected comp '(x)))
+
 ;;;;; \vec{} wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\vec{\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-vec comp '(x)))
