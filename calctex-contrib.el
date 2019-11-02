@@ -63,11 +63,10 @@
 
 (defun math-rewrite-then-format-stack-value (fn &rest args)
   "Apply the DispRules set of rewrite rules before passing to the stack value formatter."
-  (message "args: %s" args)
   (let* ((entry (car args))
          (a (car entry))
          (math-comp-selected (nth 2 entry))
-         (calc-simplify-mode 'none)
+         (calctex-avoid-simplification-at-all-costs t)
          (e (cond ((not math-rewrite-for-display) entry)
                   ((or (null a)
                        (eq calc-display-raw t)
@@ -358,6 +357,15 @@
 
 (provide 'calctex-contrib)
 
+;;; Function advices
+;;;; math-simplify
+(defvar calctex-avoid-simplification-at-all-costs nil)
+
+(defun calctex-math-simplify-advice (fn &rest args)
+  (unless calctex-avoid-simplification-at-all-costs
+    (funcall fn args)))
+
+(advice-add 'math-simplify :around 'calctex-math-simplify-advice)
 ;;; Function redefinitions
 ;;;; math-compose-expr
 ;; We redefine this to not care whether a multiplication expression like a(b + c) looks like a function call.
