@@ -70,3 +70,8 @@
      (calc-eval "adx\r" 'macro)
      (should (equal (calc-stack-line 1) "\\frac{\\partial g}{\\partial x}")))))
 
+(ert-deftest test-multieq ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "eq(a, b, c)" 'push)
+     (should (equal (calc-stack-line 1) "a = b = c")))))

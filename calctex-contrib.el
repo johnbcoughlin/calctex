@@ -36,6 +36,8 @@
   )
 
 ;;;; Functions that are only used to rewrite into for display purposes
+(defmath multieq3 (x) nil)
+(defmath multieq4 (x) nil)
 (defmath null (x) nil) ; Invisible; useful for the "upper" bound of an integral over a surface
 (defmath deefdeex (f x) nil) ; df/dx
 (defmath deedeexf (f x) nil) ; d/dx f
@@ -234,6 +236,12 @@
   (let ((comp (calc-eval "choriz([a, string(\" &= \"), b, string(\" \\\\\\\\ \\\\newline\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-align-equal-to comp '(a b))
     )
+  (let ((comp (calc-eval "choriz([a, string(\" = \"), b, string(\" = \"), c])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-multieq3 comp '(a b c)))
+
+  (let ((comp (calc-eval "choriz([a, string(\" = \"), b, string(\" = \"), c, string(\" = \"), d])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-multieq4 comp '(a b c d)))
+
 ;;;;; Abs and norm
   (let ((comp (calc-eval "choriz([string(\"\\\\left|\"), x, string(\"\\\\right|\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-abs comp '(x)))
