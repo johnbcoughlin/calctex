@@ -16,6 +16,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 (require 'calc)
+(require 'calccomp)
 (require 'calctex-contrib)
 (require 'ert)
 (require 'test-utils)

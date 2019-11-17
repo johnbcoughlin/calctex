@@ -1,4 +1,5 @@
 (require 'calc)
+(require 'calccomp)
 
 (defun calctex-contrib-prepare ()
   (unless (get-buffer "*Calculator*") (calc))
