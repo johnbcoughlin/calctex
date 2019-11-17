@@ -89,3 +89,12 @@
    (lambda ()
      (calc-eval "eq(a, b, c)" 'push)
      (should (equal (calc-stack-line 1) "a = b = c")))))
+
+(ert-deftest test-integrals-not-simplified ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "((cos(g) exp(g)) exp(sin(sqrt(f + g^2)))) (g^3 - e^g)" 'push)
+     (calc-eval "aig" 'macro)
+     (let ((messages (with-current-buffer "*Messages*"
+                       (re-search-backward "Working... Integrating" nil t))))
+       (should (equal messages nil))))))

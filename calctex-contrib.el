@@ -73,7 +73,7 @@
   (let* ((entry (car args))
          (a (car entry))
          (math-comp-selected (nth 2 entry))
-         (calctex-avoid-simplification-at-all-costs t)
+         (calctex-avoid-costly-simplifications t)
          (e (cond ((not math-rewrite-for-display) entry)
                   ((or (null a)
                        (eq calc-display-raw t)
@@ -375,14 +375,17 @@
 (provide 'calctex-contrib)
 
 ;;; Function advices
-;;;; math-simplify
-(defvar calctex-avoid-simplification-at-all-costs nil)
+;;;; math-try-integral
+;; The variable IntegLimit doesn't seem to work to keep integration from happening
+;; during rewrites (or at all?), so we roll our own advice.
+(defvar calctex-avoid-costly-simplifications nil)
 
-(defun calctex-math-simplify-advice (fn &rest args)
-  (unless calctex-avoid-simplification-at-all-costs
-    (funcall fn args)))
+(defun calctex-math-try-integral-advice (fn expr)
+  (if calctex-avoid-costly-simplifications
+      expr
+    (funcall fn expr)))
 
-(advice-add 'math-simplify :around 'calctex-math-simplify-advice)
+(advice-add 'math-try-integral :around 'calctex-math-try-integral-advice)
 ;;; Function redefinitions
 ;;;; math-compose-expr
 ;; We redefine this to not care whether a multiplication expression like a(b + c) looks like a function call.
