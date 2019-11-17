@@ -45,6 +45,9 @@
 (defmath deldelx (f x) nil) ; ∂/∂x f
 (defmath vec (x) nil) ; \vec{x}
 
+(defmath cospow (x p) nil)
+(defmath sinpow (x p) nil)
+
 ;;; Display Rewrite Rules
 (defvar calctex-contrib-disprules ()
   "The set of default display rewrite rules.")
@@ -56,6 +59,8 @@
    "tderiv(apply(f, args), x) := deedeexf(apply(f, args), x)"
    "deriv(f, x) := delfdelx(f, x) :: variable(f)"
    "deriv(apply(f, args), x) := deldelxf(apply(f, args), x)"
+   "cos(x)^p := cospow(x, p)"
+   "sin(x)^p := sinpow(x, p)"
    )
   )
 
@@ -248,8 +253,12 @@
 ;;;;; Limit
   (let ((comp (calc-eval "choriz([string(\"\\\\lim_{\"), var, string(\" \\\\rightarrow \"), bound, string(\"}\"), f])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-limit comp '(f var bound)))
+;;;;; Powers of trig funcs
+  (let ((comp (calc-eval "choriz([string(\"\\\\cos^{\"), p, string(\"}{\"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-cospow comp '(x p)))
+  (let ((comp (calc-eval "choriz([string(\"\\\\sin^{\"), p, string(\"}{\"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-sinpow comp '(x p)))
   )
-
 ;;; Declarations
 ;;;; Helper functions
 (defun calctex-reload-declarations-advice (&rest r)

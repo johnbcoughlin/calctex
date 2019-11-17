@@ -70,6 +70,20 @@
      (calc-eval "adx\r" 'macro)
      (should (equal (calc-stack-line 1) "\\frac{\\partial g}{\\partial x}")))))
 
+(ert-deftest test-cos-power ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "cos(x)^n" 'push)
+     (should (equal (calc-stack-line 1) "\\cos^{n}{x}"))
+     )))
+
+(ert-deftest test-sin-power ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "sin(x)^n" 'push)
+     (should (equal (calc-stack-line 1) "\\sin^{n}{x}"))
+     )))
+
 (ert-deftest test-multieq ()
   (with-calc-test-harness
    (lambda ()
