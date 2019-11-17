@@ -48,6 +48,15 @@
      (calc-eval "a" 'push)
      (should (equal (calc-stack-line 1) "\\vec{a}")))))
 
+(ert-deftest test-displays-vector-variable-normal ()
+  (with-calc-test-harness-normal-language
+   (lambda ()
+     (setq calctex-contrib-context-decls
+           (list "[a, vector]"))
+     (calctex-contrib-refresh)
+     (calc-eval "a" 'push)
+     (should (equal (calc-stack-line 1) "vec(a)")))))
+
 (ert-deftest test-displays-matrix-no-particular-way ()
   (with-calc-test-harness
    (lambda ()
@@ -70,6 +79,23 @@
      (calc-eval "g" 'push)
      (calc-eval "adx\r" 'macro)
      (should (equal (calc-stack-line 1) "\\frac{\\partial g}{\\partial x}")))))
+
+(ert-deftest test-derivative-of-multieq ()
+  (with-calc-test-harness
+   (lambda ()
+     (calctex-contrib-refresh)
+     (calc-eval "eq(a, deriv(b, x), c)" 'push)
+     (should (equal (calc-stack-line 1) "a = \\frac{\\partial b}{\\partial x} = c")))))
+
+(ert-deftest test-derivative-of-vector ()
+  (with-calc-test-harness
+   (lambda ()
+     (setq calctex-contrib-context-decls
+           (list "[a, vector]"))
+     (calctex-contrib-refresh)
+     (calc-eval "a" 'push)
+     (calc-eval "adx\r" 'macro)
+     (should (equal (calc-stack-line 1) "\\frac{\\partial \\vec{a}}{\\partial x}")))))
 
 (ert-deftest test-cos-power ()
   (with-calc-test-harness

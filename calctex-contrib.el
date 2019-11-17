@@ -54,16 +54,25 @@
   "The set of default display rewrite rules.")
 (setq calctex-contrib-disprules
   (list
-   "iterations(1)"
-   "x := vec(x) :: dvector(x) :: lnot(dmatrix(x))"
-   "tderiv(f, x) := deefdeex(f, x) :: variable(f)"
-   "tderiv(apply(f, args), x) := deedeexf(apply(f, args), x)"
-   "deriv(f, x) := delfdelx(f, x) :: variable(f)"
-   "deriv(apply(f, args), x) := deldelxf(apply(f, args), x)"
    "cos(x)^p := cospow(x, p)"
    "sin(x)^p := sinpow(x, p)"
+   "plain(tderiv(f, x)) := deefdeex(f, x) :: variable(f)"
+   "plain(tderiv(apply(f, args), x)) := deedeexf(apply(f, args), x)"
+   "plain(deriv(f, x)) := delfdelx(f, x) :: variable(f)"
+   "plain(deriv(apply(f, args), x)) := deldelxf(apply(f, args), x)"
+   "plain(eq(a, b, c)) := multieq3(a, b, c)"
+   "plain(eq(a, b, c, d)) := multieq4(a, b, c, d)"
    )
   )
+
+(defvar calctex-contrib-wrapper-rules ()
+  "The set of rewrite rules which simply wrap an atom in some marker function.
+These should only be applied once.")
+(setq calctex-contrib-wrapper-rules
+      (list
+       "iterations(1)"
+       "x := vec(x) :: dvector(x) ::lnot(dmatrix(x))"
+       ))
 
 ;;;; Display Rewriting Implementation
 (setq math-rewrite-for-display t)
@@ -105,6 +114,8 @@
          (rewritable-expr (copy-tree expr-with-selection-wrapped))
          (rewritten (let ((math-rewrite-for-display nil))
                       (math-rewrite rewritable-expr rules nil)))
+         (rewritten (let ((math-rewrite-for-display nil))
+                      (math-rewrite rewritten wrapper-rules nil)))
          (wrapped-selection (if sel (locate-select-wrapper rewritten) nil))
          (unwrapped-selection (if sel (car (cdr wrapped-selection)) nil)))
     (progn
@@ -357,13 +368,18 @@
                                                            calctex-contrib-context-decls)
                                                    ",\n"))))
           (calc-eval formatted 'raw)))
+  (math-setup-declarations)
+  (setq var-WrapperRules
+        (calc-eval (format "[%s]" (mapconcat #'(lambda (rule) (format "%s" rule))
+                                             calctex-contrib-wrapper-rules
+                                             ",\n"))
+                   'raw))
   (setq var-DispRules
         (calc-eval (format "[%s]" (mapconcat #'(lambda (rule) (format "%s" rule))
                                              calctex-contrib-disprules
                                              ",\n"))
                    'raw)))
 
-(calctex-context-complex-analysis)
 (calctex-contrib-refresh)
 
 (put 'calc-define 'calctex-contrib
