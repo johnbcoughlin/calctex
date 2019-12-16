@@ -17,7 +17,7 @@ resources/%_lowres.png : resources/%.dvi
 resources/%.png : resources/%.dvi
 	dvipng -fg "rgb 0 0 0" -bg "rgb 1 1 1" -D 428 -T tight -o $@ $<
 
-test: calctex_test org_calctex_test
+test: calctex_test org_calctex_test calctex_contrib_test
 
 calctex_test: clean_workdir reference_images
 	emacs -batch -L `pwd` -l color.el -l ert.el -l test-utils.el -l calctex-test.el \
