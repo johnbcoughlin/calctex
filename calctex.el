@@ -31,6 +31,7 @@
 (require 'calc-sel)
 (require 'color)
 
+;;; Custom vars
 (defcustom calctex-base-dpi 150
   "The base dots-per-inch measurement to use for png rendering.
 A higher value will give sharper images"
@@ -83,12 +84,25 @@ Will be called with SRC, the LaTeX source code. Should return a
 plist with properties 'file and 'type, representing the path to the
 rendered image and the image type.")
 
-(defvar calctex-format-latex-header
-  "
+;;; LaTeX Header
+(defun calctex-format-latex-header ()
+  (format calctex-format-latex-header-template
+          calctex-additional-latex-packages
+          calctex-additional-latex-macros
+          ))
+
+;;;; Template
+(defvar calctex-format-latex-header-template nil
+  "The LaTeX preamble to use when rendering equation sources.
+This will be placed at the front of a file, and followed by the
+background and foreground color definitions, then by
+\begin{document} <EQUATION> \end{document}")
+
+(setq calctex-format-latex-header-template
+      "
 \\documentclass{article}
-\\usepackage[usenames]{color}
-\\pagestyle{empty}             % do not remove
-% The settings below are copied from fullpage.sty
+\\pagestyle{empty}             %% do not remove
+%% The settings below are copied from fullpage.sty
 \\setlength{\\textwidth}{\\paperwidth}
 \\addtolength{\\textwidth}{-3cm}
 \\setlength{\\oddsidemargin}{1.5cm}
@@ -101,43 +115,69 @@ rendered image and the image type.")
 \\addtolength{\\textheight}{-3cm}
 \\setlength{\\topmargin}{1.5cm}
 \\addtolength{\\topmargin}{-2.54cm}
+
+%s
+%s
+")
+
+;;;; Packages
+(defvar calctex-additional-latex-packages
+  "
+\\usepackage[usenames]{color}
 \\usepackage{xcolor}
 \\usepackage{soul}
 \\usepackage{adjustbox}
 \\usepackage{amsmath}
 \\usepackage{amssymb}
 \\usepackage{siunitx}
-
+\\usepackage{cancel}
+\\usepackage{mathtools}
+\\usepackage[cal=dutchcal]{mathalpha}
 \\usepackage{xparse}
+")
+
+;;;; Macros
+(defvar calctex-additional-latex-macros
+  "
+\\def\\Xint#1{\\mathchoice
+{\\XXint\\displaystyle\\textstyle{#1}}%
+{\\XXint\\textstyle\\scriptstyle{#1}}%
+{\\XXint\\scriptstyle\\scriptscriptstyle{#1}}%
+{\\XXint\\scriptscriptstyle\\scriptscriptstyle{#1}}%
+\\!\\int}
+\\def\\XXint#1#2#3{{\setbox0=\\hbox{$#1{#2#3}{\\int}$}
+\\vcenter{\\hbox{$#2#3$}}\\kern-.5\\wd0}}
+\\def\\ddashint{\\Xint=}
+\\def\\dashint{\\Xint-}
+
+\\DeclareMathOperator*{\\res}{Res}
 
 \\NewDocumentCommand{\\colornucleus}{omme{_^}}{%
-  \\begingroup\\colorlet{currcolor}{.}%
-  \\IfValueTF{#1}
-   {\\textcolor[#1]{#2}}
-   {\\textcolor{#2}}
-    {%
-     #3% the nucleus
-     \\IfValueT{#4}{_{\\textcolor{currcolor}{#4}}}% subscript
-     \\IfValueT{#5}{^{\\textcolor{currcolor}{#5}}}% superscript
-    }%
-  \\endgroup
-
+\\begingroup\\colorlet{currcolor}{.}%
+\\IfValueTF{#1}
+{\\textcolor[#1]{#2}}
+{\\textcolor{#2}}
+{%
+#3% the nucleus
+\\IfValueT{#4}{_{\\textcolor{currcolor}{#4}}}% subscript
+\\IfValueT{#5}{^{\\textcolor{currcolor}{#5}}}% superscript
+}%
+\\endgroup
 }
 "
-  "The LaTeX preamble to use when rendering equation sources.
-This will be placed at the front of a file, and followed by the
-background and foreground color definitions, then by
-\begin{document} <EQUATION> \end{document}")
+  )
 
+;;; Rendering
+;;;; Default process
 ;;;###autoload
 (defun calctex-default-render-process (src)
   "The default function that calctex will use to render LaTeX SRC."
   (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
          (bg (calctex--latex-color :background))
-         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) calctex-format-latex-header))))
+         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) (calctex-format-latex-header)))))
          (absprefix (expand-file-name "calctex-ltximg" (temporary-file-directory)))
          (tofile (format "%s_%s.png" absprefix hash))
-         (latex-header calctex-format-latex-header)
+         (latex-header (calctex-format-latex-header))
          (tmpdir temporary-file-directory)
          (texfilebase (make-temp-name
                        (expand-file-name "calctex_" tmpdir)))
@@ -172,6 +212,7 @@ background and foreground color definitions, then by
             (error "Error converting dvi to png. Check *CalcTeX Log* for command output")))))
     `(file ,tofile type png)))
 
+;;;; Texd
 (defvar calctex-latex-proc nil)
 (defvar calctex-dvichop-proc nil)
 (defvar calctex-workdir nil)
@@ -205,7 +246,7 @@ background and foreground color definitions, then by
       (setq calctex-latex-proc latex-proc)
       (add-function :after (process-filter latex-proc) #'calctex-accept-latex-output)
       (setq calctex-dvichop-proc dvichop-proc)
-      (process-send-string latex-proc calctex-format-latex-header)
+      (process-send-string latex-proc (calctex-format-latex-header))
       (process-send-string latex-proc "\\usepackage{/Users/jack/src/texd/dvichop}\n")
       (process-send-string latex-proc "\\let\\DviFlush\\relax\n")
       (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
@@ -217,7 +258,7 @@ background and foreground color definitions, then by
 (defun calctex-texd-render-process (src)
   (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
          (bg (calctex--latex-color :background))
-         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) calctex-format-latex-header))))
+         (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) (calctex-format-latex-header)))))
          (tofile (expand-file-name (format "%s.png" hash) calctex-workdir))
          )
     (process-send-string calctex-latex-proc (format "\\definecolor{fg}{rgb}{%s}
@@ -242,6 +283,7 @@ background and foreground color definitions, then by
           (error "Error processing LaTeX. Check *CalcTeX-LaTeX* for output"))))
       `(file ,tofile type png)))
 
+;;;; Sidechannel variables
 (defvar calctex--calc-line-numbering nil
   "Sidechannel used to store the value of variable `calc-line-numbering'.
 This is used to modify that variable during hook execution and
@@ -257,6 +299,7 @@ then restore its value.")
 This is used to modify that variable during hook execution and
 then restore its value.")
 
+;;;; Minor mode
 ;;;###autoload
 (define-minor-mode calctex-mode
   "Turn calc into an editor for rendered LaTeX equations."
@@ -292,14 +335,14 @@ then restore its value.")
   (let* ((tmpdir temporary-file-directory)
          (texfilebase (make-temp-name (expand-file-name "calctex-header" tmpdir)))
          (texfile (concat texfilebase ".tex"))
-         (header-hash (sha1 calctex-format-latex-header))
+         (header-hash (sha1 (calctex-format-latex-header)))
          (header-file-name (expand-file-name (format "header%s.fmt" header-hash) tmpdir)))
     (unless (and (file-exists-p header-file-name)
                  (equal header-file-name calctex--preprocessed-latex-header-file))
       (progn
         (message "redoing header file")
         (with-temp-file texfile
-          (insert calctex-format-latex-header))
+          (insert (calctex-format-latex-header)))
         (let* ((cmd (format "cd %s && latex -ini -jobname=\"header%s\" \"&latex %s\\dump\"" tmpdir header-hash texfile))
                (log-buf (get-buffer-create "*CalcTeX Log*"))
                (result (shell-command cmd log-buf)))
