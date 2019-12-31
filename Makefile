@@ -1,10 +1,11 @@
 images = $(addprefix resources/, 2a.png 4a.png 2a_lowres.png pythag.png)
 
 clean :
-	rm $(images)
+	$(RM) $(images)
 
 clean_workdir :
-	rm -rf workdir/ && mkdir workdir
+	$(RM) -rf workdir/
+	mkdir workdir
 
 reference_images : $(images)
 
