@@ -34,6 +34,12 @@
                               (list (calc-top-list-n 1)
                                     (math-read-expr var)
                                     (math-read-expr bound))))))
+  (defmath dot ()
+    (interactive 1 "dot")
+    nil)
+  (defmath ddot ()
+    (interactive 1 "ddot")
+    nil)
   )
 
 ;;;; Functions that are only used to rewrite into for display purposes
@@ -45,6 +51,8 @@
 (defmath delfdelx (f x) nil) ; ∂f/∂x
 (defmath deldelx (f x) nil) ; ∂/∂x f
 (defmath vec (x) nil) ; \vec{x}
+(defmath dot (x) nil) ; \dot{x}
+(defmath ddot(x) nil) ; \ddot{x}
 
 (defmath cospow (x p) nil)
 (defmath sinpow (x p) nil)
@@ -227,6 +235,11 @@ These should only be applied once.")
 ;;;;; Matrices
   (let ((comp (calc-eval "choriz([A, string(\"^*\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-adjoint comp '(A)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\dot{\"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-dot comp '(x)))
+  (let ((comp (calc-eval "choriz([string(\"\\\\ddot{\"), x, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-ddot comp '(x)))
 
 ;;;;; paren wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
