@@ -1,4 +1,4 @@
-images = $(addprefix resources/, 2a.png 4a.png 2a_lowres.png)
+images = $(addprefix resources/, 2a.png 4a.png 2a_lowres.png joules.png)
 
 clean :
 	rm $(images)

@@ -56,7 +56,7 @@
                          (string-prefix-p "\begin" tex))
                      4
                    1)))
-    (message "margin: %s" margin)
+    
     (overlay-put ov 'modification-hooks '(calctex--modification-hook))
     (calctex--render-overlay-at tex ov margin)))
 
@@ -71,11 +71,11 @@
 (add-hook 'fill-nobreak-predicate #'calctex-latex-fragment-at-point)
 
 (defun calctex--modification-hook (ov after beg end &optional len)
-  (message "overlay modified: %s" ov)
+  
   (condition-case nil
       (calctex--render-overlay-at-point)
     (error (progn
-             (message "error happened!")
+             
              (calctex--remove-overlay-at-point)))))
 
 (defun calctex--render-overlay-at-point ()
@@ -236,12 +236,12 @@ jumps back to register `f'."
 ;;; Post-insert hooks
 
 (defun calctex-mode-hook-hook ()
-  (message "hooked: %s" calctex-mode)
+  
   (add-hook 'post-self-insert-hook #'org-calctex-complete-and-activate-formula nil t))
 (add-hook 'calctex-mode-hook #'calctex-mode-hook-hook)
 
 (defun org-calctex-complete-and-activate-formula ()
-  (message "char: %s" (char-before))
+  
   (cond ((equal (char-before) 36) (org-calctex--complete-inline-formula))
         ((equal (char-before) 91) (org-calctex--maybe-complete-and-activate-display-formula))))
 

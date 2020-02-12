@@ -3,20 +3,12 @@
 
 (defun assert-overlay-image-equals (ov reference-image)
   (let* ((disp (overlay-get ov 'display))
-         (actual-file (plist-get (cdr disp) :file))
-         (file-comp (format "cmp %s %s/%s" actual-file calctex-test-resources-dir reference-image))
-         (equality (shell-command file-comp)))
-    (if (not (= equality 0))
-        (progn
-        (message "
-==========Render error output:==========
-%s
+         (actual-file (plist-get (cdr disp) :file)))
+    (assert-image-equals actual-file reference-image)))
 
-========================================
-" (with-current-buffer "*CalcTeX-DVIPNG*"
-    (buffer-string)))
-        (message "command returned nonzero exit code: %s" file-comp))
-      ())
+(defun assert-image-equals (actual expected)
+  (let* ((file-comp (format "cmp %s %s/%s" actual calctex-test-resources-dir expected))
+         (equality (shell-command file-comp)))
     (should (= equality 0))))
 
 (provide 'test-utils)

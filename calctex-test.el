@@ -55,6 +55,11 @@
    (nth-overlay n)
    reference-image))
 
+(defun assert-renders-tex-to-image (tex reference-image)
+  (let* ((img (funcall calctex-render-process tex))
+         (img-file (plist-get img 'file))
+         (img-type (plist-get img 'type)))
+    (assert-image-equals img-file reference-image)))
 
 (ert-deftest test-displays-image-correctly ()
   (with-calc-test-harness
@@ -139,5 +144,10 @@
      (execute-kbd-macro (kbd "' a <RET>"))
      (execute-kbd-macro (kbd "2 <RET> *"))
      (assert-nth-overlay-image-equals 0 "2a.png"))))
+
+(ert-deftest renders-si ()
+  (assert-renders-tex-to-image
+   "\\[ \\boxed{\\eta = \\frac{\\SI{6.27e8}{\\joule}}{\\SI{7.96e9}{\\joule}} = 0.0787} \\]"
+   "2a.png"))
 
 (provide 'calctex-test)

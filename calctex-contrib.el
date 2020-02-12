@@ -34,11 +34,39 @@
                               (list (calc-top-list-n 1)
                                     (math-read-expr var)
                                     (math-read-expr bound))))))
-  (defmath dot ()
-    (interactive 1 "dot")
+
+  (defun calc-residue (z z0)
+    (interactive "sVariable: \nsAt the point: \n")
+    (calc-slow-wrapper
+     (calc-enter-result 1 "res"
+                        (cons 'calcFunc-residue
+                              (list (calc-top-list-n 1)
+                                    (math-read-expr z)
+                                    (math-read-expr z0))))))
+
+  (defmath residue (f z z0) nil)
+
+  (defmath oint (f D var) nil)
+
+  (defun calc-oint (D var)
+    (interactive "sClosed integral over: \nsWith respect to: \n")
+    (calc-slow-wrapper
+     (calc-enter-result 1 "oint"
+                        (cons 'calcFunc-oint
+                              (list (calc-top-list-n 1)
+                                    (math-read-expr D)
+                                    (math-read-expr var))))))
+
+  ;; ...
+  (defmath cdots ()
+    (interactive 0 "cdots")
     nil)
-  (defmath ddot ()
-    (interactive 1 "ddot")
+
+  (defmath dotted (x)
+    (interactive 1 "dotted")
+    nil)
+  (defmath ddotted (x)
+    (interactive 1 "ddotted")
     nil)
   )
 
@@ -104,16 +132,17 @@ These should only be applied once.")
                        (string= calc-language "unform")) entry)
                   (math-rewrite-for-display (math-rewrite-for-display-with-selection entry))
                   (t entry))))
-    (message "e: %s" e)
     (funcall fn e)))
 
 (defun math-rewrite-for-display-with-selection (entry)
   (let* ((expr (car entry))
-         (calc-rewr-sel nil)
+         (calc-rewr-sel t)
          (sel (nth 2 entry))
          (selected-sel (list 'calcFunc-select sel))
-         (math-rewrite-selections nil)
+         (math-rewrite-selections t)
          (rules '(var DispRules var-DispRules))
+         (wrapper-rules '(var WrapperRules var-WrapperRules))
+         (var-IntegLimit 0) ; Avoid attempting integrals when normalizing expressions
          (expr-with-selection-wrapped (if sel
                                           (calc-replace-sub-formula expr
                                                                     sel
@@ -127,15 +156,15 @@ These should only be applied once.")
          (wrapped-selection (if sel (locate-select-wrapper rewritten) nil))
          (unwrapped-selection (if sel (car (cdr wrapped-selection)) nil)))
     (progn
-    (message "rewritten: %s" rewritten)
+      (message "entry: %s" entry)
+      (message "sel: %s" sel)
+      (message "wrapped-selection: %s" wrapped-selection)
     (let*
          ((rewritten-expr (if sel (calc-replace-sub-formula rewritten wrapped-selection unwrapped-selection) rewritten))
          (formattable-entry (list rewritten-expr
                                   (car (cdr entry))
                                   unwrapped-selection)))
     ;; we need to undo the mutation we made to `entry'
-    (message "rewritable-expr: %s" rewritable-expr)
-    (message "formattable: %s" formattable-entry)
     (if sel (calc-replace-sub-formula expr selected-sel sel))
     formattable-entry
     ))))
@@ -223,11 +252,17 @@ These should only be applied once.")
 (defun calctex-contrib-common-compositions ()
   (let ((comp (calc-eval "choriz([string(\"\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-null comp '()))
-;;;;; Selections
+;;;;; Greek Letters
+  (let ((comp (calc-eval "choriz([string(\"\\\\Gamma\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-gamma comp '(x)))
 
+;;;;; Selections
   (let ((comp (calc-eval "choriz([string(\"\\\\colornucleus{red}{\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-selected comp '(x)))
 
+;;;;; Integration
+  (let ((comp (calc-eval "choriz([string(\"\\\\oint_{\"), D, string(\"} \"), f, string(\" \\\\, d \"), var])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-oint comp '(f D var)))
 ;;;;; \vec{} wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\vec{\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-vec comp '(x)))
@@ -236,10 +271,14 @@ These should only be applied once.")
   (let ((comp (calc-eval "choriz([A, string(\"^*\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-adjoint comp '(A)))
 
+;;;;; Dots
+  (let ((comp (calc-eval "choriz([string(\"\\\\cdots\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-cdots comp '()))
+
   (let ((comp (calc-eval "choriz([string(\"\\\\dot{\"), x, string(\"}\")])" 'raw)))
-    (calctex-contrib-define-composition 'calcFunc-dot comp '(x)))
+    (calctex-contrib-define-composition 'calcFunc-dotted comp '(x)))
   (let ((comp (calc-eval "choriz([string(\"\\\\ddot{\"), x, string(\"}\")])" 'raw)))
-    (calctex-contrib-define-composition 'calcFunc-ddot comp '(x)))
+    (calctex-contrib-define-composition 'calcFunc-ddotted comp '(x)))
 
 ;;;;; paren wrapper
   (let ((comp (calc-eval "choriz([string(\"\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
@@ -264,8 +303,8 @@ These should only be applied once.")
 ;;;;; Align-eq
   ;; ridiculously, this just does two backslashes at the end of the line.
   (let ((comp (calc-eval "choriz([a, string(\" &= \"), b, string(\" \\\\\\\\ \\\\newline\")])" 'raw)))
-    (calctex-contrib-define-composition 'calcFunc-align-equal-to comp '(a b))
-    )
+    (calctex-contrib-define-composition 'calcFunc-align-equal-to comp '(a b)))
+
   (let ((comp (calc-eval "choriz([a, string(\" = \"), b, string(\" = \"), c])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-multieq3 comp '(a b c)))
 
@@ -275,9 +314,13 @@ These should only be applied once.")
 ;;;;; Abs and norm
   (let ((comp (calc-eval "choriz([string(\"\\\\left|\"), x, string(\"\\\\right|\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-abs comp '(x)))
-;;;;; Limit
+;;;;; Limit, Residue
   (let ((comp (calc-eval "choriz([string(\"\\\\lim_{\"), var, string(\" \\\\rightarrow \"), bound, string(\"}\"), f])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-limit comp '(f var bound)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\res_{\"), z, string(\" = \"), z0, string(\"}\"), f])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-residue comp '(f z z0)))
+
 ;;;;; Powers of trig funcs
   (let ((comp (calc-eval "choriz([string(\"\\\\cos^{\"), p, string(\"}{\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-cospow comp '(x p)))
@@ -372,8 +415,8 @@ These should only be applied once.")
   (calctex-contrib-refresh))
 
 ;;; Variable lifecycles
-
 (defun calctex-contrib-refresh ()
+  (run-hooks 'calc-check-defines)
   (calctex-contrib-common-compositions)
   (setq var-Decls
         (let ((formatted (format "[%s]" (mapconcat #'(lambda (decl) (format "%s" decl))
@@ -393,14 +436,11 @@ These should only be applied once.")
                                              ",\n"))
                    'raw)))
 
-(calctex-contrib-refresh)
-
 (put 'calc-define 'calctex-contrib
      '(progn
         (calctex-contrib-define-functions)
         ))
 
-(run-hooks 'calc-check-defines)
 
 (provide 'calctex-contrib)
 
@@ -922,7 +962,6 @@ These should only be applied once.")
 		                 (if (and (eq (car a) 'calcFunc-if) (= (length a) 4))
 			                   (assoc "?" math-expr-opers)
 		                   (math-assq2 (car a) math-expr-opers)))))
-        (message "%s" op)
 	      (cond ((and op
 		                (or (= (length a) 3) (eq (car a) 'calcFunc-if))
 		                (/= (nth 3 op) -1))
@@ -946,6 +985,7 @@ These should only be applied once.")
 			                     (list 'horiz "{left ( "
 				                         (math-compose-expr a -1)
 				                         " right )}")))
+                     ;; Marker: Wrapping negations unnecessarily
 		                 (list 'horiz "(" (math-compose-expr a 0) ")"))))
 		            ((and (memq calc-language '(tex latex))
 		                  (memq (car a) '(/ calcFunc-choose calcFunc-evalto))
@@ -977,49 +1017,49 @@ These should only be applied once.")
 			                  (or (equal (car op) "^") (equal (car op) "_"))
 			                  (not (and (stringp rhs) (= (length rhs) 1)))
 			                  (setq rhs (list 'horiz "{" rhs "}")))
-		               (or (and (message "math-expr-opers: %s" math-expr-opers)
+		               (or (and
                         (eq (car a) '*)
-			                      (or (null calc-language)
-				                        (assoc "2x" math-expr-opers))
-			                      (let* ((prevt (math-prod-last-term (nth 1 a)))
-				                           (nextt (math-prod-first-term (nth 2 a)))
-				                           (prevc (or (math-comp-last-char lhs)
-					                                    (and (memq (car-safe prevt)
-							                                           '(^ calcFunc-subscr
-							                                               calcFunc-sqrt
-							                                               frac))
-						                                       (eq calc-language 'big)
-						                                       ?0)))
-				                           (nextc (or (math-comp-first-char rhs)
-					                                    (and (memq (car-safe nextt)
-							                                           '(calcFunc-sqrt
-							                                             calcFunc-sum
-							                                             calcFunc-prod
-							                                             calcFunc-integ))
-						                                       (eq calc-language 'big)
-						                                       ?0))))
-			                        (and prevc nextc
-				                           (or (and (>= nextc ?a) (<= nextc ?z))
-				                               (and (>= nextc ?A) (<= nextc ?Z))
-				                               (and (>= nextc ?α) (<= nextc ?ω))
-				                               (and (>= nextc ?Α) (<= nextc ?Ω))
-				                               (and (>= nextc ?0) (<= nextc ?9))
-				                               (memq nextc '(?. ?_ ?#
-							                                          ?\( ?\[ ?\{))
-				                               (and (eq nextc ?\\)
-					                                  (not (string-match
-						                                      "\\`\\\\left("
-						                                      (math-comp-first-string
-						                                       rhs)))))
-				                           (not (and (not (memq calc-language '(tex latex)))
-                                             (eq (car-safe prevt) 'var)
-					                                   (eq nextc ?\()))
-				                           (list 'horiz
-					                               (list 'set setlev 1)
-					                               lhs
-					                               (list 'break math-compose-level)
-					                               " "
-					                               rhs))))
+			                  (or (null calc-language)
+				                    (assoc "2x" math-expr-opers))
+			                  (let* ((prevt (math-prod-last-term (nth 1 a)))
+				                       (nextt (math-prod-first-term (nth 2 a)))
+				                       (prevc (or (math-comp-last-char lhs)
+					                                (and (memq (car-safe prevt)
+							                                       '(^ calcFunc-subscr
+							                                           calcFunc-sqrt
+							                                           frac))
+						                                   (eq calc-language 'big)
+						                                   ?0)))
+				                       (nextc (or (math-comp-first-char rhs)
+					                                (and (memq (car-safe nextt)
+							                                       '(calcFunc-sqrt
+							                                         calcFunc-sum
+							                                         calcFunc-prod
+							                                         calcFunc-integ))
+						                                   (eq calc-language 'big)
+						                                   ?0))))
+			                    (and prevc nextc
+				                       (or (and (>= nextc ?a) (<= nextc ?z))
+				                           (and (>= nextc ?A) (<= nextc ?Z))
+				                           (and (>= nextc ?α) (<= nextc ?ω))
+				                           (and (>= nextc ?Α) (<= nextc ?Ω))
+				                           (and (>= nextc ?0) (<= nextc ?9))
+				                           (memq nextc '(?. ?_ ?#
+							                                      ?\( ?\[ ?\{))
+				                           (and (eq nextc ?\\)
+					                              (not (string-match
+						                                  "\\`\\\\left("
+						                                  (math-comp-first-string
+						                                   rhs)))))
+				                       (not (and (not (memq calc-language '(tex latex)))
+                                         (eq (car-safe prevt) 'var)
+					                               (eq nextc ?\()))
+				                       (list 'horiz
+					                           (list 'set setlev 1)
+					                           lhs
+					                           (list 'break math-compose-level)
+					                           " "
+					                           rhs))))
 		                   (list 'horiz
 			                       (list 'set setlev 1)
 			                       lhs
@@ -1160,4 +1200,21 @@ These should only be applied once.")
                    (list 'horiz func calc-function-open
 		                     (math-compose-vector (cdr a) ", " 0)
 		                     calc-function-close))))))))))
+
+
+(defun math-tex-expr-is-flat (a)
+  (message "is flat? %s" a)
+  (let ((result (or (Math-integerp a)
+                    (memq (car a) '(float var))
+                    (and (memq (car a) '(+ - * neg calcFunc-dotted calcFunc-ddotted))
+                         (progn
+                           (while (and (setq a (cdr a))
+                                       (math-tex-expr-is-flat (car a))))
+                           (null a)))
+                    (and (memq (car a) '(^ calcFunc-subscr))
+                         (math-tex-expr-is-flat (nth 1 a))))))
+    (progn
+      (message "result: %s" result)
+      result)
+  ))
 
