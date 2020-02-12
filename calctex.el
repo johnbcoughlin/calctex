@@ -218,9 +218,13 @@ background and foreground color definitions, then by
 (defvar calctex-workdir nil)
 
 (defun calctex-accept-latex-output (proc string)
-  (let ((err (string-match-p "^!" string)))
+  (let ((err (string-match-p "^\\*?!" string)))
     (if err
-        (setq calctex-latex-success nil)
+        (progn
+          (if
+              (yes-or-no-p (format "LaTeX Render Error:\n%s\n\nRestart the render process?" string))
+              (calctex-setup-texd))
+          (setq calctex-latex-success nil))
       (setq calctex-latex-success t))))
 
 (defun calctex-setup-texd ()
@@ -278,9 +282,7 @@ background and foreground color definitions, then by
                 (shell-command dvipng-cmd (get-buffer-create "*CalcTeX-DVIPNG*")))
               (unless (file-exists-p tofile)
                 (error "Error converting dvi to png. Check *CalcTeX-DVIPNG* for command output"))))
-        (progn
-          (calctex-setup-texd)
-          (error "Error processing LaTeX. Check *CalcTeX-LaTeX* for output"))))
+        (error "LaTeX Render Error")))
       `(file ,tofile type png)))
 
 ;;;; Sidechannel variables
