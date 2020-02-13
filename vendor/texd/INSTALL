@@ -1,0 +1,81 @@
+# $Id: INSTALL,v 1.3 2002/02/23 15:25:37 jfine Exp $
+# This file describes v0.3 of the TeX daemon
+
+INSTALLATION OF THE TEX DAEMON
+==============================
+
+1.  Making the software
+
+The command
+    make
+will compile the program dvichop.
+
+
+2.  Testing the software
+
+The command
+    timetexd
+will exercise the TeX daemon, and print some timing results.
+
+It has been written for GNU/Linux, and may not work on other
+UNIX platforms.
+
+
+3.  Using the software
+
+TeXpad and LaTeXpad are interactive 'calculators' for use with plain
+TeX and LaTeX respectively.
+
+The command 
+    texpad
+will start up TeXpad.  Type TeX commands in at the "Gimme:" prompt,
+and the result in the xdvi window.  Give an empty response to quit.
+LaTeXpad is used in the same way.
+
+
+4.  Installing the software
+
+Files have to be placed where the system can find them.  The
+most important files are
+    dvichop -- this should be placed somewhere in your path
+    dvichop.sty -- this should be placed where (La)TeX can find it
+
+The other files, "timetexd", "texpad" and "latexpad" are shell
+scripts.  Please modify them to suit your own needs.  They typeset
+"texpad.help" and "latexpad.help" do display help in xdvi.
+
+
+5.  Obtaining an ipc enabled TeX (optional)
+
+On small files, such as Don Knuth's "story.tex", TeX in daemon mode is
+about seven times quicker than the usual batch mode.  
+
+But we can do much better than this.  Lot's of time is wasted in
+flushing TeX's output dvi buffer.  When this is eliminated a speed up
+of 50 times compared to batch mode is possible.
+
+For this, you will need a version of TeX that has interprocess
+communication (ipc) enabled.  Actually, what we need is a TeX that
+does not buffer the output dvi stream, and ipc is a pre-existing way
+of getting that.
+
+To discover if your version of TeX has ipc enabled, type
+    tex --help
+and if
+    -ipc  send DVI output to a socket [...]
+appears then you have ipc.
+
+If you have ipc enabled, excellent.  (But at time of writing, this is
+unlikely.)
+
+The alternative is to build your own.  You have to rebuild TeX from
+source, taking care to pass
+    --enable-ipc
+as a parameter to the build process.
+
+Once you have an ipc enabled TeX, you should remove the flushing from
+"dvichop.sty", and supply "-ipc" to TeX's command line.
+
+The "texpad" and "latexpad" scripts do this automatically.
+
+# INSTALL ends here

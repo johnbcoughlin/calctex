@@ -101,7 +101,8 @@
 (defun org-calctex-hide-overlay-at-point ()
   (interactive)
   (let* ((ov (org-calctex-overlay-at-point)))
-    (if ov (delete-overlay ov)
+    (if ov
+        (delete-overlay ov)
       (calctex--render-overlay-at-point))))
 
 (defun calctex-move-to-end-of-frag ()
@@ -270,3 +271,5 @@ jumps back to register `f'."
         )))
 
 (provide 'org-calctex)
+
+;;; org-calctex.el ends here

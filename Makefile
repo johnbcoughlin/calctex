@@ -20,14 +20,14 @@ resources/%.png : resources/%.dvi
 test: calctex_test org_calctex_test calctex_contrib_test
 
 calctex_test: clean_workdir reference_images
-	emacs -batch -L `pwd` -l color.el -l ert.el -l test-utils.el -l calctex-test.el \
+	emacs -batch -L `pwd` -l color.el -l ert.el -l test-utils.el -l test/calctex-test.el \
 		--eval="(setq calctex-test-resources-dir \"$$(pwd)/resources\")" \
 		--eval="(setq temporary-file-directory \"$$(pwd)/workdir\")" \
 		-f toggle-debug-on-error \
 		-f ert-run-tests-batch-and-exit
 
 org_calctex_test: clean_workdir reference_images resources/test.org
-	emacs -batch -L `pwd` -l color.el -l org.el -l ert.el -l test-utils.el -l org-calctex-test.el \
+	emacs -batch -L `pwd` -l color.el -l org.el -l ert.el -l test-utils.el -l test/org-calctex-test.el \
 		--eval="(setq calctex-test-resources-dir \"$$(pwd)/resources\")" \
 		--eval="(setq temporary-file-directory \"$$(pwd)/workdir\")" \
 		-f toggle-debug-on-error \
@@ -36,3 +36,11 @@ org_calctex_test: clean_workdir reference_images resources/test.org
 calctex_contrib_test: calctex-contrib-test.el
 	emacs -batch -L `pwd` -l ert.el -l calctex-contrib-test.el \
 		-f ert-run-tests-batch-and-exit
+
+vendor/texd/bin/dvichop: vendor/texd/dvichop.c vendor/texd/dviop.h
+	cd vendor/texd && mkdir -p bin && make dvichop && mv dvichop bin
+
+vendor/texd: vendor/texd/dvichop.sty vendor/texd/bin/dvichop
+
+pkg: vendor/texd calctex.el calctex-pkg.el
+	mkdir -p dist && tar -c -f dist/calctex-0.1 calctex.el calctex-pkg.el vendor/texd

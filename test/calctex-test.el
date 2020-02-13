@@ -17,13 +17,12 @@
 
 (require 'calctex)
 (require 'ert)
-(require 'test-utils)
 
 (defun with-calc-test-harness (body)
+  (set-face-attribute 'default nil :foreground "black" :background "white")
   (calc)
   (calc-reset 0)
   (with-current-buffer "*Calculator*"
-    (set-face-attribute 'default nil :foreground "black" :background "white")
     (let* ((tempdir-name (make-temp-name temporary-file-directory))
            (calctex-latex-image-directory tempdir-name))
       (make-directory calctex-latex-image-directory)
@@ -137,17 +136,21 @@
      )))
 
 (ert-deftest creates-parents-of-image-cache ()
+  (progn
   (with-calc-test-harness
    (lambda ()
-     (setq calctex-latex-image-directory "~/foo/bar/calctex")
-     (calctex-mode 1)
-     (execute-kbd-macro (kbd "' a <RET>"))
-     (execute-kbd-macro (kbd "2 <RET> *"))
-     (assert-nth-overlay-image-equals 0 "2a.png"))))
+     (let ((calctex-latex-image-directory "./calctex-image-cache"))
+       (progn
+         (calctex-mode 1)
+         (execute-kbd-macro (kbd "' a <RET>"))
+         (execute-kbd-macro (kbd "2 <RET> *"))
+         (assert-nth-overlay-image-equals 0 "2a.png")))))))
 
 (ert-deftest renders-si ()
-  (assert-renders-tex-to-image
-   "\\[ \\boxed{\\eta = \\frac{\\SI{6.27e8}{\\joule}}{\\SI{7.96e9}{\\joule}} = 0.0787} \\]"
-   "2a.png"))
+  (progn
+    (set-face-attribute 'default nil :foreground "black" :background "white")
+    (assert-renders-tex-to-image
+     "\\[ \\boxed{\\eta = \\frac{\\SI{6.27e8}{\\joule}}{\\SI{7.96e9}{\\joule}} = 0.0787} \\]"
+     "joules.png")))
 
 (provide 'calctex-test)

@@ -19,7 +19,6 @@
 (require 'calccomp)
 (require 'calctex-contrib)
 (require 'ert)
-(require 'test-utils)
 
 (defun with-calc-test-harness (body)
   (calc)

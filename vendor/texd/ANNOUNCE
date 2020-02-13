@@ -1,0 +1,40 @@
+[ANN]  texd 0.3, texpad 0.1, latexpad 0.1
+
+texd 0.3 -- runs TeX in daemon mode, much quicker for small files
+texpad 0.1 -- interactive evaluation of plain TeX expressions
+latexpad 0.1 -- interactive evaluation of LaTeX expressions
+
+TeX takes a little while to load, but will then typeset pages very
+quickly.  Interactive applications typically typeset lots of small
+items.  By running TeX in daemon mode, its start-up time can be
+removed from the loop.
+
+TeXpad and LaTeXpad are interactive applications of the TeX daemon.
+The user enters material at a TeX prompt, which is then typeset and
+displayed in xdvi.  They provide a sort of 'calculator' for (La)TeX.
+The response is almost instantaneous.
+
+The TeX daemon works with existing TeX distributions, and on small
+files it is seven times quicker than batch mode.  If your version of
+TeX has ipc (interprocess communication) enabled, the TeX daemon will
+be about 50 times quicker than batch mode.
+
+Instant Preview is similar to TeXpad, except that the input comes from
+an Emacs buffer.  It provides a semi-wysiwyg interface to (La)TeX.
+Previously, Instant Preview was distributed as part of the texd
+package.  It has now been unbundled, and a new release is in
+preparation.
+
+This softare, released under the GPL, was developed under GNU/Linux,
+and should run on all Unix platforms.
+
+Thanks to the TeX Users Group (http://www.tug.org) for hosting the
+texd mailing list.
+    http://tug.org/pipermail/texd  -- mailing list archives
+    http://tug.org/mailman/listinfo/texd -- to join mailing list
+
+To download, and for more information visit:
+  http://www.activetex.org
+
+24 February 2002
+

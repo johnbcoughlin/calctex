@@ -31,6 +31,8 @@
 (require 'calc-sel)
 (require 'color)
 
+(defconst calctex--load-base (file-name-directory load-file-name))
+
 ;;; Custom vars
 (defcustom calctex-base-dpi 150
   "The base dots-per-inch measurement to use for png rendering.
@@ -234,7 +236,10 @@ background and foreground color definitions, then by
         (delete-process "*CalcTeX-DVIChop*"))
       (error nil))
   (let* ((tmpdir (make-temp-file "calctex" t))
-         (default-directory tmpdir))
+         (default-directory tmpdir)
+         (dvichop-sty (expand-file-name "vendor/texd/dvichop" calctex--load-base))
+         (dvichop-bin (expand-file-name "vendor/texd/bin/dvichop" calctex--load-base))
+         )
     (setq calctex-workdir tmpdir)
     (shell-command "rm -f calctex.dvi" "*CalcTeX-DVIChop*")
     (shell-command "mkfifo calctex.dvi" "*CalcTeX-DVIChop*")
@@ -245,13 +250,14 @@ background and foreground color definitions, then by
                    (dvichop-proc (start-file-process
                                   "CalcTeX-DVIChop"
                                   "*CalcTeX-DVIChop*"
-                                  "/Users/jack/src/texd/dvichop" "calctex.dvi"))
+                                  dvichop-bin
+                                  "calctex.dvi"))
                    )
       (setq calctex-latex-proc latex-proc)
       (add-function :after (process-filter latex-proc) #'calctex-accept-latex-output)
       (setq calctex-dvichop-proc dvichop-proc)
       (process-send-string latex-proc (calctex-format-latex-header))
-      (process-send-string latex-proc "\\usepackage{/Users/jack/src/texd/dvichop}\n")
+      (process-send-string latex-proc (format "\\usepackage{%s}\n" dvichop-sty))
       (process-send-string latex-proc "\\let\\DviFlush\\relax\n")
       (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
       (process-send-string latex-proc "\\begin{document}\n")
@@ -310,25 +316,26 @@ then restore its value.")
   :keymap (make-sparse-keymap)
   (if calctex-mode
       (progn
-        (calctex-setup-texd)
-        (add-hook 'pre-command-hook #'calctex--precommand)
-        (add-hook 'post-command-hook #'calctex--postcommand)
-        (add-hook 'post-self-insert-hook #'calctex--postcommand)
-        (calctex--preprocess-latex-header)
-        (setq calctex--calc-line-breaking calc-line-breaking)
-        (setq calctex--calc-highlight-selections-with-faces calc-highlight-selections-with-faces)
-        (setq calc-highlight-selections-with-faces t)
         (save-excursion
           (progn
+            (calctex-setup-texd)
+            (add-hook 'pre-command-hook #'calctex--precommand)
+            (add-hook 'post-command-hook #'calctex--postcommand)
+            (add-hook 'post-self-insert-hook #'calctex--postcommand)
+            (calctex--preprocess-latex-header)
+            (setq calctex--calc-line-breaking calc-line-breaking)
+            (setq calctex--calc-highlight-selections-with-faces calc-highlight-selections-with-faces)
+            (setq calc-highlight-selections-with-faces t)
             (message "Starting calc")
             (unless (get-buffer "*Calculator*") (calc))
             (calc-show-selections -1)
             (calc-latex-language nil))))
-    (remove-hook 'pre-command-hook #'calctex--precommand)
-    (remove-hook 'post-command-hook #'calctex--postcommand)
-    (remove-hook 'post-self-insert-hook #'calctex--postcommand)
-    (setq calc-highlight-selections-with-faces calctex--calc-highlight-selections-with-faces)
-    (calctex--remove-overlays)))
+    (progn
+      (remove-hook 'pre-command-hook #'calctex--precommand)
+      (remove-hook 'post-command-hook #'calctex--postcommand)
+      (remove-hook 'post-self-insert-hook #'calctex--postcommand)
+      (setq calc-highlight-selections-with-faces calctex--calc-highlight-selections-with-faces)
+      (calctex--remove-overlays))))
 
 (defvar calctex--preprocessed-latex-header-file nil
   "Location of the cached latex header .fmt file.")

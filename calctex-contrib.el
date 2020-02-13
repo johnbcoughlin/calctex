@@ -111,119 +111,121 @@ These should only be applied once.")
        ))
 
 ;;;; Display Rewriting Implementation
-(setq math-rewrite-for-display t)
-(advice-add 'math-format-stack-value :around 'math-rewrite-then-format-stack-value)
+(defun calctex-implement-display-rewrite ()
+  (setq math-rewrite-for-display t)
+  (advice-add 'math-format-stack-value :around 'math-rewrite-then-format-stack-value)
 
-(defun math-rewrite-then-format-stack-value (fn &rest args)
-  "Apply the DispRules set of rewrite rules before passing to the stack value formatter."
-  (let* ((entry (car args))
-         (a (car entry))
-         (math-comp-selected (nth 2 entry))
-         (calctex-avoid-costly-simplifications t)
-         (e (cond ((not math-rewrite-for-display) entry)
-                  ((or (null a)
-                       (eq calc-display-raw t)
-                       (stringp a)
-                       (eq a 'top-of-stack)
-                       calc-prepared-composition
-                       (and (Math-scalarp a)
-                            (memq calc-language '(nil flat uniform))
-                            (null math-comp-selected))
-                       (string= calc-language "unform")) entry)
-                  (math-rewrite-for-display (math-rewrite-for-display-with-selection entry))
-                  (t entry))))
-    (funcall fn e)))
+  (defun math-rewrite-then-format-stack-value (fn &rest args)
+    "Apply the DispRules set of rewrite rules before passing to the stack value formatter."
+    (let* ((entry (car args))
+           (a (car entry))
+           (math-comp-selected (nth 2 entry))
+           (calctex-avoid-costly-simplifications t)
+           (e (cond ((not math-rewrite-for-display) entry)
+                    ((or (null a)
+                         (eq calc-display-raw t)
+                         (stringp a)
+                         (eq a 'top-of-stack)
+                         calc-prepared-composition
+                         (and (Math-scalarp a)
+                              (memq calc-language '(nil flat uniform))
+                              (null math-comp-selected))
+                         (string= calc-language "unform")) entry)
+                    (math-rewrite-for-display (math-rewrite-for-display-with-selection entry))
+                    (t entry))))
+      (funcall fn e)))
 
-(defun math-rewrite-for-display-with-selection (entry)
-  (let* ((expr (car entry))
-         (calc-rewr-sel t)
-         (sel (nth 2 entry))
-         (selected-sel (list 'calcFunc-select sel))
-         (math-rewrite-selections t)
-         (rules '(var DispRules var-DispRules))
-         (wrapper-rules '(var WrapperRules var-WrapperRules))
-         (var-IntegLimit 0) ; Avoid attempting integrals when normalizing expressions
-         (expr-with-selection-wrapped (if sel
-                                          (calc-replace-sub-formula expr
-                                                                    sel
-                                                                    selected-sel)
-                                        expr))
-         (rewritable-expr (copy-tree expr-with-selection-wrapped))
-         (rewritten (let ((math-rewrite-for-display nil))
-                      (math-rewrite rewritable-expr rules nil)))
-         (rewritten (let ((math-rewrite-for-display nil))
-                      (math-rewrite rewritten wrapper-rules nil)))
-         (wrapped-selection (if sel (locate-select-wrapper rewritten) nil))
-         (unwrapped-selection (if sel (car (cdr wrapped-selection)) nil)))
-    (progn
-      (message "entry: %s" entry)
-      (message "sel: %s" sel)
-      (message "wrapped-selection: %s" wrapped-selection)
-    (let*
-         ((rewritten-expr (if sel (calc-replace-sub-formula rewritten wrapped-selection unwrapped-selection) rewritten))
-         (formattable-entry (list rewritten-expr
-                                  (car (cdr entry))
-                                  unwrapped-selection)))
-    ;; we need to undo the mutation we made to `entry'
-    (if sel (calc-replace-sub-formula expr selected-sel sel))
-    formattable-entry
-    ))))
+  (defun math-rewrite-for-display-with-selection (entry)
+    (let* ((expr (car entry))
+           (calc-rewr-sel t)
+           (sel (nth 2 entry))
+           (selected-sel (list 'calcFunc-select sel))
+           (math-rewrite-selections t)
+           (rules '(var DispRules var-DispRules))
+           (wrapper-rules '(var WrapperRules var-WrapperRules))
+           (var-IntegLimit 0) ; Avoid attempting integrals when normalizing expressions
+           (expr-with-selection-wrapped (if sel
+                                            (calc-replace-sub-formula expr
+                                                                      sel
+                                                                      selected-sel)
+                                          expr))
+           (rewritable-expr (copy-tree expr-with-selection-wrapped))
+           (rewritten (let ((math-rewrite-for-display nil))
+                        (math-rewrite rewritable-expr rules nil)))
+           (rewritten (let ((math-rewrite-for-display nil))
+                        (math-rewrite rewritten wrapper-rules nil)))
+           (wrapped-selection (if sel (locate-select-wrapper rewritten) nil))
+           (unwrapped-selection (if sel (car (cdr wrapped-selection)) nil)))
+      (progn
+        (message "entry: %s" entry)
+        (message "sel: %s" sel)
+        (message "wrapped-selection: %s" wrapped-selection)
+        (let*
+            ((rewritten-expr (if sel (calc-replace-sub-formula rewritten wrapped-selection unwrapped-selection) rewritten))
+             (formattable-entry (list rewritten-expr
+                                      (car (cdr entry))
+                                      unwrapped-selection)))
+          ;; we need to undo the mutation we made to `entry'
+          (if sel (calc-replace-sub-formula expr selected-sel sel))
+          formattable-entry
+          ))))
 
-(defun locate-select-wrapper (expr)
-  (if (Math-primp expr)
-      nil
-    (if (and (eq (car expr) 'calcFunc-select)
-             (= (length expr) 2))
-        expr
-      (or (locate-select-wrapper (car expr))
-          (locate-select-wrapper (cdr expr))))))
+  (defun locate-select-wrapper (expr)
+    (if (Math-primp expr)
+        nil
+      (if (and (eq (car expr) 'calcFunc-select)
+               (= (length expr) 2))
+          expr
+        (or (locate-select-wrapper (car expr))
+            (locate-select-wrapper (cdr expr))))))
 
-(defun math-rewrite (math-rewrite-whole-expr rules &optional math-mt-many)
-  (let* ((crules (math-compile-rewrites rules))
-         (heads (math-rewrite-heads math-rewrite-whole-expr))
-         (trace-buffer (get-buffer "*Trace*"))
-         (calc-display-just 'center)
-         (calc-display-origin 39)
-         (calc-line-breaking 78)
-         (calc-line-numbering nil)
-         (calc-show-selections t)
-         (calc-why nil)
-         (math-mt-func (function
-                        (lambda (x)
-                          (let ((result (math-apply-rewrites x (cdr crules)
-                                                             heads crules)))
-                            (if result
-                                (progn
-                                  (if trace-buffer
-                                      (let* ((math-rewrite-for-display nil)
-                                             (fmt (math-format-stack-value
-                                                   (list result nil nil))))
-                                        (with-current-buffer trace-buffer
-                                          (insert "\nrewrite to\n" fmt "\n"))))
-                                  (setq heads (math-rewrite-heads result heads t))))
-                            result)))))
-    (if trace-buffer
-	      (let* ((math-rewrite-for-display nil)
-               (fmt (math-format-stack-value (list math-rewrite-whole-expr nil nil))))
-	        (with-current-buffer trace-buffer
-	          (setq truncate-lines t)
-	          (goto-char (point-max))
-	          (insert "\n\nBegin rewriting\n" fmt "\n"))))
-    (or math-mt-many (setq math-mt-many (or (nth 1 (car crules))
-				                                    math-rewrite-default-iters)))
-    (if (equal math-mt-many '(var inf var-inf)) (setq math-mt-many 1000000))
-    (if (equal math-mt-many '(neg (var inf var-inf))) (setq math-mt-many -1000000))
-    (math-rewrite-phase (nth 3 (car crules)))
-    (if trace-buffer
-	      (let* ((math-rewrite-for-display nil)
-               (fmt (math-format-stack-value (list math-rewrite-whole-expr nil nil))))
-	        (with-current-buffer trace-buffer
-	          (insert "\nDone rewriting"
-		                (if (= math-mt-many 0) " (reached iteration limit)" "")
-		                ":\n" fmt "\n"))))
-    math-rewrite-whole-expr))
+  (defun math-rewrite (math-rewrite-whole-expr rules &optional math-mt-many)
+    (let* ((crules (math-compile-rewrites rules))
+           (heads (math-rewrite-heads math-rewrite-whole-expr))
+           (trace-buffer (get-buffer "*Trace*"))
+           (calc-display-just 'center)
+           (calc-display-origin 39)
+           (calc-line-breaking 78)
+           (calc-line-numbering nil)
+           (calc-show-selections t)
+           (calc-why nil)
+           (math-mt-func (function
+                          (lambda (x)
+                            (let ((result (math-apply-rewrites x (cdr crules)
+                                                               heads crules)))
+                              (if result
+                                  (progn
+                                    (if trace-buffer
+                                        (let* ((math-rewrite-for-display nil)
+                                               (fmt (math-format-stack-value
+                                                     (list result nil nil))))
+                                          (with-current-buffer trace-buffer
+                                            (insert "\nrewrite to\n" fmt "\n"))))
+                                    (setq heads (math-rewrite-heads result heads t))))
+                              result)))))
+      (if trace-buffer
+	        (let* ((math-rewrite-for-display nil)
+                 (fmt (math-format-stack-value (list math-rewrite-whole-expr nil nil))))
+	          (with-current-buffer trace-buffer
+	            (setq truncate-lines t)
+	            (goto-char (point-max))
+	            (insert "\n\nBegin rewriting\n" fmt "\n"))))
+      (or math-mt-many (setq math-mt-many (or (nth 1 (car crules))
+				                                      math-rewrite-default-iters)))
+      (if (equal math-mt-many '(var inf var-inf)) (setq math-mt-many 1000000))
+      (if (equal math-mt-many '(neg (var inf var-inf))) (setq math-mt-many -1000000))
+      (math-rewrite-phase (nth 3 (car crules)))
+      (if trace-buffer
+	        (let* ((math-rewrite-for-display nil)
+                 (fmt (math-format-stack-value (list math-rewrite-whole-expr nil nil))))
+	          (with-current-buffer trace-buffer
+	            (insert "\nDone rewriting"
+		                  (if (= math-mt-many 0) " (reached iteration limit)" "")
+		                  ":\n" fmt "\n"))))
+      math-rewrite-whole-expr))
 
 
+  )
 ;;; Compositions
 ;;;; Helper function
 (defun calctex-contrib-define-composition (func comp arglist)
@@ -434,29 +436,33 @@ These should only be applied once.")
         (calc-eval (format "[%s]" (mapconcat #'(lambda (rule) (format "%s" rule))
                                              calctex-contrib-disprules
                                              ",\n"))
-                   'raw)))
+                   'raw))
+  (calctex-redefine-calc-functions)
+  (calctex-advise-calc-functions)
+  (calctex-implement-display-rewrite)
+  )
 
 (put 'calc-define 'calctex-contrib
      '(progn
         (calctex-contrib-define-functions)
         ))
 
-
-(provide 'calctex-contrib)
-
 ;;; Function advices
+(defun calctex-advise-calc-functions ()
 ;;;; math-try-integral
-;; The variable IntegLimit doesn't seem to work to keep integration from happening
-;; during rewrites (or at all?), so we roll our own advice.
-(defvar calctex-avoid-costly-simplifications nil)
+  ;; The variable IntegLimit doesn't seem to work to keep integration from happening
+  ;; during rewrites (or at all?), so we roll our own advice.
+  (defvar calctex-avoid-costly-simplifications nil)
 
-(defun calctex-math-try-integral-advice (fn expr)
-  (if calctex-avoid-costly-simplifications
-      expr
-    (funcall fn expr)))
+  (defun calctex-math-try-integral-advice (fn expr)
+    (if calctex-avoid-costly-simplifications
+        expr
+      (funcall fn expr)))
 
-(advice-add 'math-try-integral :around 'calctex-math-try-integral-advice)
+  (advice-add 'math-try-integral :around 'calctex-math-try-integral-advice)
+  )
 ;;; Function redefinitions
+(defun calctex-redefine-calc-functions ()
 ;;;; math-compose-expr
 ;; We redefine this to not care whether a multiplication expression like a(b + c) looks like a function call.
 ;; We never want to see a function call in LaTeX; concatenation is always multiplication.
@@ -1218,3 +1224,6 @@ These should only be applied once.")
       result)
   ))
 
+)
+;;; End
+(provide 'calctex-contrib)
