@@ -20,7 +20,11 @@ test/resources/%.png : resources/%.dvi
 test: calctex_test org_calctex_test calctex_contrib_test
 
 calctex_test: clean_workdir reference_images
-	export TEXD_DIR=$$(cd vendor/texd; pwd); cd calctex; cask exec ert-runner
+	emacs -batch -L `pwd` -l color.el -l ert.el -l test/test-helper.el -l test/calctex-test.el \
+		--eval="(setq calctex-test-resources-dir \"$$(pwd)/resources\")" \
+		--eval="(setq temporary-file-directory \"$$(pwd)/workdir\")" \
+		-f toggle-debug-on-error \
+		-f ert-run-tests-batch-and-exit
 
 org_calctex_test: clean_workdir reference_images resources/test.org
 	emacs -batch -L `pwd` -l color.el -l org.el -l ert.el -l test/test-helper.el -l test/org-calctex-test.el \
@@ -33,15 +37,8 @@ calctex_contrib_test: calctex-contrib-test.el
 	emacs -batch -L `pwd` -l ert.el -l calctex-contrib-test.el \
 		-f ert-run-tests-batch-and-exit
 
-vendor/texd:
-	cd vendor && git clone git@github.com:johnbcoughlin/texd.git
-
-vendor/texd/bin/dvichop: vendor/texd vendor/texd
+vendor/texd/bin/dvichop: vendor/texd/dvichop.c vendor/texd/dviop.h
 	cd vendor/texd && mkdir -p bin && make dvichop && mv dvichop bin
 
 pkg: vendor/texd calctex.el calctex-pkg.el
 	mkdir -p dist && tar -c -f dist/calctex-0.1 calctex.el calctex-pkg.el vendor/texd
-
-
-foo: 
-	export TEXD_DIR=$$(cd vendor/texd; pwd); echo $$TEXD_DIR

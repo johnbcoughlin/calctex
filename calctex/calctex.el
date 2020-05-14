@@ -30,6 +30,7 @@
 (require 'subr-x)
 (require 'calc-sel)
 (require 'color)
+(require 'svg)
 
 (defconst calctex--load-base (file-name-directory load-file-name))
 
@@ -78,6 +79,21 @@ rest of the buffer, and so appears lighter.
 
 This value may be negative, in which case it lightens the foreground."
   :type '(integer)
+  :group 'calctex)
+
+(defcustom calctex-dvichop-sty nil
+  "The path to the dvichop .sty file, WITHOUT EXTENSION, if one
+is installed. This only has an effect if `calctex-dvichop-bin' is
+non-nil. If both variables are non-nil, then calctex will use the
+faster TeXD rendering engine."
+  :type '(string)
+  :group 'calctex)
+
+(defcustom calctex-dvichop-bin nil
+  "The path to the dvichop binary, if one is installed. This only has an effect
+if `calctex-dvichop-sty' is non-nil. If both variables are non-nil, then calctex
+will use the faster TeXD rendering engine."
+  :type '(string)
   :group 'calctex)
 
 (defvar calctex-render-process #'calctex-texd-render-process
@@ -136,6 +152,7 @@ background and foreground color definitions, then by
 \\usepackage{mathtools}
 \\usepackage[cal=dutchcal]{mathalpha}
 \\usepackage{xparse}
+\\usepackage{stix2}
 ")
 
 ;;;; Macros
@@ -215,6 +232,8 @@ background and foreground color definitions, then by
     `(file ,tofile type png)))
 
 ;;;; Texd
+(defun calctex--texd-workable ()
+  (and calctex-dvichop-sty calctex-dvichop-bin))
 (defvar calctex-latex-proc nil)
 (defvar calctex-dvichop-proc nil)
 (defvar calctex-workdir nil)
@@ -237,12 +256,11 @@ background and foreground color definitions, then by
       (error nil))
   (let* ((tmpdir (make-temp-file "calctex" t))
          (default-directory tmpdir)
-         (dvichop-sty (expand-file-name "vendor/texd/dvichop" calctex--load-base))
-         (dvichop-bin (expand-file-name "vendor/texd/bin/dvichop" calctex--load-base))
          )
     (setq calctex-workdir tmpdir)
     (shell-command "rm -f calctex.dvi" "*CalcTeX-DVIChop*")
     (shell-command "mkfifo calctex.dvi" "*CalcTeX-DVIChop*")
+    (message "%s" default-directory)
     (let* (        (latex-proc (start-file-process
                                 "CalcTeX-LaTeX"
                                 "*CalcTeX-LaTeX*"
@@ -250,14 +268,14 @@ background and foreground color definitions, then by
                    (dvichop-proc (start-file-process
                                   "CalcTeX-DVIChop"
                                   "*CalcTeX-DVIChop*"
-                                  dvichop-bin
+                                  calctex-dvichop-bin
                                   "calctex.dvi"))
                    )
       (setq calctex-latex-proc latex-proc)
       (add-function :after (process-filter latex-proc) #'calctex-accept-latex-output)
       (setq calctex-dvichop-proc dvichop-proc)
       (process-send-string latex-proc (calctex-format-latex-header))
-      (process-send-string latex-proc (format "\\usepackage{%s}\n" dvichop-sty))
+      (process-send-string latex-proc (format "\\usepackage{%s}\n" calctex-dvichop-sty))
       (process-send-string latex-proc "\\let\\DviFlush\\relax\n")
       (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
       (process-send-string latex-proc "\\begin{document}\n")
@@ -291,6 +309,14 @@ background and foreground color definitions, then by
         (error "LaTeX Render Error")))
       `(file ,tofile type png)))
 
+;;;; ReX/TeXnetium
+(defun calctex-rex-svg-render-process (src)
+  (let* ((svg-src (texnetium-render-svg src 16))
+         (svg (apply #'create-image svg-src 'svg t ())))
+    (progn
+      (message "%s" svg-src)
+      svg)
+    ))
 ;;;; Sidechannel variables
 (defvar calctex--calc-line-numbering nil
   "Sidechannel used to store the value of variable `calc-line-numbering'.
@@ -394,6 +420,17 @@ Renders line overlays in the calc buffer."
 
 (defun calctex--render-overlay-at (tex ov margin)
   "Render LaTeX source TEX onto the overlay OV."
+  (calctex--render-file-overlay-at tex ov margin))
+  ;; (condition-case err
+  ;;     (progn
+  ;;       (calctex--render-svg-overlay-at tex ov margin)
+  ;;       (message "svg rendering succeeded"))
+  ;;   (error
+  ;;    (progn
+  ;;      (message "Error with SVG rendering: %s" (error-message-string err))
+  ;;      (calctex--render-file-overlay-at tex ov margin)))))
+
+(defun calctex--render-file-overlay-at (tex ov margin)
   (let* ((img (funcall calctex-render-process tex))
          (img-file (plist-get img 'file))
          (img-type (plist-get img 'type)))
@@ -404,6 +441,14 @@ Renders line overlays in the calc buffer."
            'display
            (calctex--image-overlay-display img-type img-file margin)))
       )))
+
+(defun calctex--render-svg-overlay-at (tex ov margin)
+  (let ((svg (calctex-rex-svg-render-process tex)))
+    (overlay-put
+     ov
+     'display
+     svg)))
+     ;(list 'image :type 'svg :data svg :margin margin :ascent 'center))))
 
 (defun calctex--image-overlay-display (img-type img-file margin)
   "Return the 'display property of an image overlay.
@@ -472,7 +517,7 @@ The LIGHTENPERCENT parameter may be negative, which darkens the color."
   (when (and (string= calc-language "latex")
              (string= "*Calculator*" (buffer-name)))
     (goto-char (point-min))
-    ; Skip the header line "--- Emacs Calculator Mode ---"
+                                        ; Skip the header line "--- Emacs Calculator Mode ---"
     (forward-line 1)
     (while (not (eobp))
       (calctex--overlay-line)
@@ -484,10 +529,10 @@ The LIGHTENPERCENT parameter may be negative, which darkens the color."
 
 Called by `calctex--create-line-overlays'."
   (when (string=
-       "."
-       (string-trim (buffer-substring
-                     (line-beginning-position)
-                     (line-end-position)))))
+         "."
+         (string-trim (buffer-substring
+                       (line-beginning-position)
+                       (line-end-position)))))
     (let* ((line-start (if calctex--calc-line-numbering
                            (+ (line-beginning-position) 4)
                          (line-beginning-position)))
@@ -498,7 +543,7 @@ Called by `calctex--create-line-overlays'."
            (tex (format "\\begin{align*} %s \\end{align*}" selected-line-contents)))
       (progn
         (move-overlay ov line-start line-end)
-        (calctex--render-overlay-at tex ov 2))))
+        (calctex--render-svg-overlay-at tex ov 2))))
 
 (defun calctex--lift-selection (text line-start line-end)
   "Wrap selected portions of a LaTeX formula in a color directive.
@@ -541,6 +586,9 @@ the rendered output."
   (with-current-buffer "*Calculator*"
     (dolist (ov (overlays-in (point-min) (point-max)))
       (delete-overlay ov))))
+
+(with-eval-after-load 'texnetium
+  )
 
 (provide 'calctex)
 

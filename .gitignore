@@ -11,4 +11,5 @@ resources/*.log
 *.DS_Store
 *.elc
 workdir*
-/vendor/texd/bin/
+/vendor/texd
+**/.cask/

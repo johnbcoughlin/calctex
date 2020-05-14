@@ -2,10 +2,7 @@
 (source melpa)
 
 (package "calctex" "0.1" "WYSIWYG LaTeX equation editing with calc.el")
-(files "calctex.el"
-       "org-calctex.el"
-       "calctex-contrib.el"
-       ("vendor" ("texd" "vendor/texd/bin/dvichop" "vendor/texd/dvichop.sty")))
+(files "calctex.el")
 
 (development
  (depends-on "f")

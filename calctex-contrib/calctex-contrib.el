@@ -1,3 +1,9 @@
+;;; calctex-contrib --- Enhancements to the Emacs Calc function set and LaTeX formatting
+
+;;; Commentary:
+
+;;; Code:
+
 (require 'calc)
 (require 'calccomp)
 
@@ -22,6 +28,17 @@
   (defmath laplacian (f)
     (interactive 1 "laplacian")
     nil)
+
+  (defmath goesto (var bound)
+    nil)
+
+  (defun calc-goesto (bound)
+    (interactive "sGoes to: \n")
+    (calc-slow-wrapper
+     (calc-enter-result 1 "goes"
+                        (cons 'calcFunc-goesto
+                              (list (calc-top-list-n 1)
+                                    (math-read-expr bound))))))
 
   (defmath limit (f var bound)
     nil)
@@ -57,6 +74,10 @@
                                     (math-read-expr D)
                                     (math-read-expr var))))))
 
+  (defmath subscrFunc (fcall sub)
+    (interactive 2 "subscr")
+    nil)
+
   ;; ...
   (defmath cdots ()
     (interactive 0 "cdots")
@@ -79,11 +100,13 @@
 (defmath delfdelx (f x) nil) ; ∂f/∂x
 (defmath deldelx (f x) nil) ; ∂/∂x f
 (defmath vec (x) nil) ; \vec{x}
+(defmath tensor (T) nil) ; \overleftrightarrow{x}
 (defmath dot (x) nil) ; \dot{x}
 (defmath ddot(x) nil) ; \ddot{x}
 
 (defmath cospow (x p) nil)
 (defmath sinpow (x p) nil)
+(defmath subscrFuncDisplayable (f sub args) nil)
 
 ;;; Display Rewrite Rules
 (defvar calctex-contrib-disprules ()
@@ -98,6 +121,7 @@
    "plain(deriv(apply(f, args), x)) := deldelxf(apply(f, args), x)"
    "plain(eq(a, b, c)) := multieq3(a, b, c)"
    "plain(eq(a, b, c, d)) := multieq4(a, b, c, d)"
+   "subscrFunc(apply(f, args), sub) := subscrFuncDisplayable(f, sub, args)"
    )
   )
 
@@ -254,6 +278,10 @@ These should only be applied once.")
 (defun calctex-contrib-common-compositions ()
   (let ((comp (calc-eval "choriz([string(\"\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-null comp '()))
+;;;;; Subscripts
+  (let ((comp (calc-eval "choriz([f, string(\"_{\"), sub, string(\"} \\\\left(\"), choriz(args, \", \"), string(\"\\\\right) \")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-subscrFuncDisplayable comp '(f sub args)))
+
 ;;;;; Greek Letters
   (let ((comp (calc-eval "choriz([string(\"\\\\Gamma\\\\left(\"), x, string(\"\\\\right)\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-gamma comp '(x)))
@@ -265,9 +293,12 @@ These should only be applied once.")
 ;;;;; Integration
   (let ((comp (calc-eval "choriz([string(\"\\\\oint_{\"), D, string(\"} \"), f, string(\" \\\\, d \"), var])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-oint comp '(f D var)))
-;;;;; \vec{} wrapper
+;;;;; Vectors and tensors
   (let ((comp (calc-eval "choriz([string(\"\\\\vec{\"), x, string(\"}\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-vec comp '(x)))
+
+  (let ((comp (calc-eval "choriz([string(\"\\\\overleftrightarrow{\"), T, string(\"}\")])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-tensor comp '(T)))
 
 ;;;;; Matrices
   (let ((comp (calc-eval "choriz([A, string(\"^*\")])" 'raw)))
@@ -317,6 +348,9 @@ These should only be applied once.")
   (let ((comp (calc-eval "choriz([string(\"\\\\left|\"), x, string(\"\\\\right|\")])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-abs comp '(x)))
 ;;;;; Limit, Residue
+  (let ((comp (calc-eval "choriz([var, string(\" \\\\rightarrow \"), bound])" 'raw)))
+    (calctex-contrib-define-composition 'calcFunc-goesto comp '(var bound)))
+
   (let ((comp (calc-eval "choriz([string(\"\\\\lim_{\"), var, string(\" \\\\rightarrow \"), bound, string(\"}\"), f])" 'raw)))
     (calctex-contrib-define-composition 'calcFunc-limit comp '(f var bound)))
 
@@ -1217,13 +1251,109 @@ These should only be applied once.")
                            (while (and (setq a (cdr a))
                                        (math-tex-expr-is-flat (car a))))
                            (null a)))
-                    (and (memq (car a) '(^ calcFunc-subscr))
+                    (and (memq (car a) '(^ calcFunc-pow calcFunc-subscr))
                          (math-tex-expr-is-flat (nth 1 a))))))
     (progn
+      (message "foo")
       (message "result: %s" result)
       result)
   ))
-
 )
+;;; Precedence table
+(put 'tex 'math-oper-table
+  '( ( "\\hat"    calcFunc-hat     -1  950 )
+     ( "\\check"  calcFunc-check   -1  950 )
+     ( "\\tilde"  calcFunc-tilde   -1  950 )
+     ( "\\acute"  calcFunc-acute   -1  950 )
+     ( "\\grave"  calcFunc-grave   -1  950 )
+     ( "\\dot"    calcFunc-dot     -1  950 )
+     ( "\\ddot"   calcFunc-dotdot  -1  950 )
+     ( "\\breve"  calcFunc-breve   -1  950 )
+     ( "\\bar"    calcFunc-bar     -1  950 )
+     ( "\\vec"    calcFunc-Vec     -1  950 )
+     ( "\\underline" calcFunc-under -1  950 )
+     ( "u|"       calcFunc-abs	   -1    0 )
+     ( "|"        closing	    0   -1 )
+     ( "\\lfloor" calcFunc-floor   -1    0 )
+     ( "\\rfloor" closing           0   -1 )
+     ( "\\lceil"  calcFunc-ceil    -1    0 )
+     ( "\\rceil"  closing           0   -1 )
+     ( "\\pm"	  sdev		   300 300 )
+     ( "!"        calcFunc-fact	   210  -1 )
+     ( "^"	  ^		   201 200 )
+     ( "_"	  calcFunc-subscr  202 201 ) ; Modified to be one higher than the default.
+     ( "u+"       ident		   -1  197 )
+     ( "u-"       neg		   -1  197 )
+     ( "\\times"  *		   191 190 )
+     ( "*"        *		   191 190 )
+     ( "2x"	  *		   191 190 )
+     ( "+"	  +		   180 181 )
+     ( "-"	  -		   180 181 )
+     ( "\\over"	  /		   170 171 )
+     ( "/"	  /		   170 171 )
+     ( "\\choose" calcFunc-choose  170 171 )
+     ( "\\mod"	  %		   170 171 )
+     ( "<"	  calcFunc-lt	   160 161 )
+     ( ">"	  calcFunc-gt	   160 161 )
+     ( "\\leq"	  calcFunc-leq	   160 161 )
+     ( "\\geq"	  calcFunc-geq	   160 161 )
+     ( "="	  calcFunc-eq	   160 161 )
+     ( "\\neq"	  calcFunc-neq	   160 161 )
+     ( "\\ne"	  calcFunc-neq	   160 161 )
+     ( "\\lnot"   calcFunc-lnot     -1 121 )
+     ( "\\land"	  calcFunc-land    110 111 )
+     ( "\\lor"	  calcFunc-lor     100 101 )
+     ( "?"	  (math-read-if)    91  90 )
+     ( "!!!"	  calcFunc-pnot	    -1  85 )
+     ( "&&&"	  calcFunc-pand	    80  81 )
+     ( "|||"	  calcFunc-por	    75  76 )
+     ( "\\gets"	  calcFunc-assign   51  50 )
+     ( ":="	  calcFunc-assign   51  50 )
+     ( "::"       calcFunc-condition 45 46 )
+     ( "\\to"	  calcFunc-evalto   40  41 )
+     ( "\\to"	  calcFunc-evalto   40  -1 )
+     ( "=>" 	  calcFunc-evalto   40  41 )
+     ( "=>" 	  calcFunc-evalto   40  -1 )))
+
+(put 'latex 'math-oper-table
+     (append (get 'tex 'math-oper-table)
+             '(( "\\Hat"    calcFunc-Hat     -1  950 )
+               ( "\\Check"  calcFunc-Check   -1  950 )
+               ( "\\Tilde"  calcFunc-Tilde   -1  950 )
+               ( "\\Acute"  calcFunc-Acute   -1  950 )
+               ( "\\Grave"  calcFunc-Grave   -1  950 )
+               ( "\\Dot"    calcFunc-Dot     -1  950 )
+               ( "\\Ddot"   calcFunc-Dotdot  -1  950 )
+               ( "\\Breve"  calcFunc-Breve   -1  950 )
+               ( "\\Bar"    calcFunc-Bar     -1  950 )
+               ( "\\Vec"    calcFunc-VEC     -1  950 )
+               ( "\\dddot"  calcFunc-dddot   -1  950 )
+               ( "\\ddddot" calcFunc-ddddot  -1  950 )
+               ( "\\div"     /                170 171 )
+               ( "\\le"     calcFunc-leq     160 161 )
+               ( "\\leqq"   calcFunc-leq     160 161 )
+               ( "\\leqsland" calcFunc-leq   160 161 )
+               ( "\\ge"	    calcFunc-geq     160 161 )
+               ( "\\geqq"   calcFunc-geq     160 161 )
+               ( "\\geqslant" calcFunc-geq   160 161 )
+               ( "="	    calcFunc-eq	     160 161 )
+               ( "\\neq"    calcFunc-neq     160 161 )
+               ( "\\ne"	    calcFunc-neq     160 161 )
+               ( "\\lnot"   calcFunc-lnot     -1 121 )
+               ( "\\land"   calcFunc-land    110 111 )
+               ( "\\lor"    calcFunc-lor     100 101 )
+               ( "?"	    (math-read-if)    91  90 )
+               ( "!!!"	    calcFunc-pnot     -1  85 )
+               ( "&&&"	    calcFunc-pand     80  81 )
+               ( "|||"	    calcFunc-por      75  76 )
+               ( "\\gets"   calcFunc-assign   51  50 )
+               ( ":="	    calcFunc-assign   51  50 )
+               ( "::"       calcFunc-condition 45 46 )
+               ( "\\to"	    calcFunc-evalto   40  41 )
+               ( "\\to"	    calcFunc-evalto   40  -1 )
+               ( "=>" 	    calcFunc-evalto   40  41 )
+               ( "=>" 	    calcFunc-evalto   40  -1 ))))
 ;;; End
+
 (provide 'calctex-contrib)
+;;; calctex-contrib.el ends here

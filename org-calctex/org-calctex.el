@@ -28,6 +28,8 @@
 
 (require 'org)
 (require 'calctex)
+(require 'posframe)
+(require 'cdlatex)
 
 (defvar calctex--last-frag nil)
 
@@ -56,7 +58,6 @@
                          (string-prefix-p "\begin" tex))
                      4
                    1)))
-    
     (overlay-put ov 'modification-hooks '(calctex--modification-hook))
     (calctex--render-overlay-at tex ov margin)))
 
@@ -75,7 +76,6 @@
   (condition-case nil
       (calctex--render-overlay-at-point)
     (error (progn
-             
              (calctex--remove-overlay-at-point)))))
 
 (defun calctex--render-overlay-at-point ()
@@ -169,6 +169,114 @@
 
 ;;; Activate/Accept
 
+(defvar calctex--calc-posframe nil)
+(defun org-calctex-activate-posframe ()
+  "Activate the *Calculator* buffer through a posframe
+and have it accept keyboard input."
+  (interactive)
+  (let* ((position (point))
+         (poshandler #'posframe-poshandler-point-bottom-left-corner)
+
+         (width 500)
+         (height 500)
+
+         (min-width 1)
+         (min-height 1)
+         (x-pixel-offset 0)
+         (y-pixel-offset 0)
+
+         (left-fringe 0)
+         (right-fringe 0)
+
+         (parent-window (selected-window))
+
+         (position-info (posn-at-point position parent-window))
+
+         (parent-window-top (window-pixel-top parent-window))
+         (parent-window-left (window-pixel-left parent-window))
+         (parent-window-width (window-pixel-width parent-window))
+         (parent-window-height (window-pixel-height parent-window))
+
+         (mode-line-height (window-mode-line-height))
+         (minibuffer-height (window-pixel-height (minibuffer-window)))
+
+         (header-line-height (window-header-line-height parent-window))
+         (tab-line-height (if (functionp 'window-tab-line-height)
+                              (window-tab-line-height)
+                            0))
+
+         (parent-frame (window-frame parent-window))
+         (parent-frame-width (frame-pixel-width parent-frame))
+         (parent-frame-height (frame-pixel-height parent-frame))
+
+         (font-width (default-font-width))
+         (font-height (with-current-buffer (window-buffer parent-window)
+                        (posframe--get-font-height position)))
+
+         (calc-buffer (get-buffer "*Calculator*"))
+
+         (frame (if (and calctex--calc-posframe (frame-live-p calctex--calc-posframe))
+                    calctex--calc-posframe
+                  (make-frame
+                   `((minibuffer . t)
+                     (internal-border-width . 1)
+                     (parent-frame . ,parent-frame)
+                     (undecorated . nil)))))
+
+         (frame-relative-pos (posframe-poshandler-point-bottom-left-corner
+        `(;All poshandlers will get info from this plist.
+          :position ,position
+          :position-info ,position-info
+          :poshandler ,poshandler
+          :font-height ,font-height
+          :font-width ,font-width
+          :posframe ,frame
+          :posframe-width ,width
+          :posframe-height ,height
+          :posframe-buffer ,calc-buffer
+          :parent-frame ,parent-frame
+          :parent-frame-width ,parent-frame-width
+          :parent-frame-height ,parent-frame-height
+          :parent-window ,parent-window
+          :parent-window-top ,parent-window-top
+          :parent-window-left ,parent-window-left
+          :parent-window-width ,parent-window-width
+          :parent-window-height ,parent-window-height
+          :mode-line-height ,mode-line-height
+          :minibuffer-height ,minibuffer-height
+          :header-line-height ,header-line-height
+          :tab-line-height ,tab-line-height
+          :x-pixel-offset ,x-pixel-offset
+          :y-pixel-offset ,y-pixel-offset))))
+    (progn
+      (set-frame-position frame (car frame-relative-pos) (cdr frame-relative-pos))
+      (setq calctex--parent-frame (selected-frame))
+      (select-frame frame)
+      (set-face-background 'internal-border "black" frame)
+      (delete-other-windows-internal)
+      (set-window-buffer (selected-window) calc-buffer)
+      (set-window-dedicated-p (selected-window) t)
+      (setq calctex--calc-posframe frame)
+      (make-frame-visible calctex--calc-posframe)
+      )))
+
+(defun org-calctex-activate ()
+  (interactive)
+  (org-calctex-activate-posframe)
+  )
+
+(defun org-calctex-accept-formula ()
+  (interactive)
+  (make-frame-invisible calctex--calc-posframe)
+  (select-frame calctex--parent-frame)
+  (if (equal evil-state 'visual)
+      (let ((current-prefix-arg '(4)))
+        (progn
+          (call-interactively 'calc-copy-to-buffer)))
+    (calc-copy-to-buffer nil))
+  (evil-insert-state)
+  )
+
 ;; Activate the formula at point with calc Embedded mode.
 (defun org-calctex-activate-formula ()
   "Activate the formula at point with calc Embedded mode,
@@ -181,20 +289,30 @@ jumps back to register `f'."
     (if frag
         (progn
           (goto-char (org-element-property :begin frag))
-          ; 102 = f
-          (point-to-register 102 '(4))
           (when (equal (char-after (point)) ?$) (forward-char))
           (calc-embedded nil)
           ;(calctex--render-overlay-at-point)
-          (calc))
+
+          (posframe-show "*Calculator*"
+                         :position (point)
+                         :internal-border-width 1
+                         :internal-border-color "black")
+
+          (setq calctex--parent-frame (selected-frame))
+          (let* ((frame (buffer-local-value 'posframe--frame (get-buffer "*Calculator*")))
+                (window (frame-selected-window frame)))
+            (progn
+              (redirect-frame-focus calctex--parent-frame frame)
+              (select-frame frame)
+            ))
+          )
       (message "no frag"))))
 
-(defun org-calctex-accept-formula ()
+(defun org-calctex-accept-formula-old ()
   "Accept the formula and jump to the end of it"
   (interactive)
-  ; 102 = f
-  (jump-to-register 102)
   (calc-embedded t)
+  (posframe-hide "*Calculator*")
   (let ((frag (calctex-latex-fragment-at-point)))
     (goto-char (org-element-property :end frag))))
 
@@ -219,8 +337,8 @@ jumps back to register `f'."
 (defun calctex-insert-display-formula ()
   (interactive)
   (evil-insert-newline-below)
-  (let ((calc-embedded-open-new-formula "\\[ ")
-        (calc-embedded-close-new-formula " \\]"))
+  (let ((calc-embedded-open-new-formula "\\begin{align*} ")
+        (calc-embedded-close-new-formula "\\end{align*}"))
     (progn
       (calc-embedded-new-formula)
       (bookmark-set "calctex-formula")
@@ -237,12 +355,10 @@ jumps back to register `f'."
 ;;; Post-insert hooks
 
 (defun calctex-mode-hook-hook ()
-  
   (add-hook 'post-self-insert-hook #'org-calctex-complete-and-activate-formula nil t))
 (add-hook 'calctex-mode-hook #'calctex-mode-hook-hook)
 
 (defun org-calctex-complete-and-activate-formula ()
-  
   (cond ((equal (char-before) 36) (org-calctex--complete-inline-formula))
         ((equal (char-before) 91) (org-calctex--maybe-complete-and-activate-display-formula))))
 
@@ -269,6 +385,24 @@ jumps back to register `f'."
           (org-calctex-hide-overlay-at-point)
           (org-calctex-activate-formula))
         )))
+
+(defhydra cdlatex-environment-hydra (:color red)
+  ("a" (cdlatex-environment "align*") "align*" :color blue)
+  ("A" (cdlatex-environment "align") "align" :color blue)
+  ("e" (cdlatex-environment "equation*") "equation*" :color blue)
+  ("E" (cdlatex-environment "equation") "equation" :color blue)
+  ("c" (cdlatex-environment "cases") "cases" :color blue)
+  ("p" (cdlatex-environment "pmatrix") "pmatrix" :color blue))
+
+(defhydra calctex-hydra (:color red)
+  ("h" org-calctex-hide-overlay-at-point "show/hide overlays")
+  ("n" org-calctex-next-formula "next")
+  ("p" org-calctex-prev-formula "prev")
+  ("r" org-calctex-activate "replace" :color blue)
+  ("e" cdlatex-environment-hydra/body "Insert equation environment" :color blue)
+  ("q" nil "quit" :color blue))
+
+(define-key calctex-mode-map (kbd "s-f") 'calctex-hydra/body)
 
 (provide 'org-calctex)
 

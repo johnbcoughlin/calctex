@@ -7,8 +7,10 @@
 
 (defvar calctex-test-resources-dir nil "The directory where test resources live")
 
-(setq calctex-dvichop-sty "../../vendor/texd/dvichop.sty")
-(setq calctex-dvichop-bin "../../vendor/texd/dvichop")
+(message "%s" default-directory)
+
+(setq calctex-dvichop-sty "/Users/jack/src/calctex/vendor/texd/dvichop")
+(setq calctex-dvichop-bin (format "%s/bin/dvichop" (getenv "TEXD_DIR")))
 
 (setq calctex-test-resources-dir (expand-file-name "resources" (file-name-directory load-file-name)))
 
