@@ -13,3 +13,7 @@ resources/*.log
 workdir*
 /vendor/texd
 **/.cask/
+*.png
+*.dvi
+*.log
+calctex/test/resources/auto

@@ -1,4 +1,4 @@
-images = $(addprefix test/resources/, 2a.png 4a.png 2a_lowres.png joules.png)
+images = $(addprefix test/resources/, 2a.png 4a.png 2a_lowres.png joules.png pythag.png)
 
 clean :
 	rm $(images)
@@ -9,12 +9,12 @@ clean_workdir :
 reference_images : $(images)
 
 test/resources/%.dvi : test/resources/%.tex
-	pwd && latex -interaction nonstopmode -output-directory resources $<
+	pwd && latex -interaction nonstopmode -output-directory test/resources $<
 
 test/resources/%_lowres.png : test/resources/%.dvi
 	dvipng $< -o $@ -T tight -D 150
 
-test/resources/%.png : resources/%.dvi
+test/resources/%.png : test/resources/%.dvi
 	dvipng -fg "rgb 0 0 0" -bg "rgb 1 1 1" -D 428 -T tight -o $@ $<
 
 test: calctex_test org_calctex_test calctex_contrib_test

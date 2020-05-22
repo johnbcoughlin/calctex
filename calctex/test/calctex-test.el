@@ -18,139 +18,49 @@
 (require 'calctex)
 (require 'ert)
 
-(defun with-calc-test-harness (body)
-  (set-face-attribute 'default nil :foreground "black" :background "white")
-  (calc)
-  (calc-reset 0)
-  (with-current-buffer "*Calculator*"
-    (let* ((tempdir-name (make-temp-name temporary-file-directory))
-           (calctex-latex-image-directory tempdir-name))
-      (make-directory calctex-latex-image-directory)
-      (funcall body))))
-
-(defun nth-overlay (n)
-  (let* ((ovs (overlays-in (point-min) (point-max)))
-         (ov (nth n ovs)))
-    (if ov
-        ov
-      (message "
-==========Render error output:==========
-%s
-
-========================================
-" (with-current-buffer "*CalcTeX-DVIPNG*"
-    (buffer-string))))))
-
-(defun overlay-display-property (ov prop)
-  (let* ((disp (overlay-get ov 'display)))
-    (plist-get (cdr disp) prop)))
-
-(defun assert-no-overlays ()
-  (let* ((ovs (overlays-in (point-min) (point-max))))
-    (should (= 0 (length ovs)))))
-
-(defun assert-nth-overlay-image-equals (n reference-image)
-  (assert-overlay-image-equals
-   (nth-overlay n)
-   reference-image))
-
-(defun assert-renders-tex-to-image (tex reference-image)
-  (let* ((img (funcall calctex-render-process tex))
-         (img-file (plist-get img 'file))
-         (img-type (plist-get img 'type)))
-    (assert-image-equals img-file reference-image)))
-
-(ert-deftest test-displays-image-correctly ()
-  (with-calc-test-harness
-   (lambda ()
-      (calctex-mode 1)
-      (execute-kbd-macro (kbd "' a <RET>"))
-      (execute-kbd-macro (kbd "2 <RET> *"))
-      (let ((ov (nth-overlay 0)))
-        (assert-overlay-image-equals ov "2a.png")))))
-
-(ert-deftest test-changes-image-overlay-live ()
-  (with-calc-test-harness
-   (lambda ()
-     (calctex-mode 1)
-     (execute-kbd-macro (kbd "' a <RET>"))
-     (execute-kbd-macro (kbd "2 <RET> *"))
-     (assert-nth-overlay-image-equals 0 "2a.png")
-     (execute-kbd-macro (kbd "2 <RET> *"))
-     (assert-nth-overlay-image-equals 0 "4a.png"))))
-
-(ert-deftest test-turning-off-calctex-hides-overlays ()
-  (with-calc-test-harness
-   (lambda ()
-     (calctex-mode 1)
-     (execute-kbd-macro (kbd "' a <RET>"))
-     (execute-kbd-macro (kbd "2 <RET> *"))
-     (calctex-mode -1)
-     (assert-no-overlays))))
-
-(ert-deftest test-switching-language-mode-hides-overlays ()
-  (with-calc-test-harness
-   (lambda ()
-     (calctex-mode 1)
-     (execute-kbd-macro (kbd "' a <RET>"))
-     (execute-kbd-macro (kbd "2 <RET> *"))
-     (execute-kbd-macro (kbd "d N"))
-     (assert-no-overlays))))
-
-(ert-deftest test-multiple-overlays ()
-  (with-calc-test-harness
-   (lambda ()
-     (calctex-mode 1)
-     (execute-kbd-macro (kbd "' a <RET>"))
-     (execute-kbd-macro (kbd "2 <RET> *"))
-     (execute-kbd-macro (kbd "<RET>"))
-     (execute-kbd-macro (kbd "2 <RET> *"))
-     (assert-nth-overlay-image-equals 0 "2a.png")
-     (assert-nth-overlay-image-equals 1 "4a.png")
-     )))
+(defvar src-2a "\\[ 2a \\]")
 
 (ert-deftest test-imagemagick-disabled ()
-  (with-calc-test-harness
-   (lambda ()
-     (let ((calctex-imagemagick-enabled-p nil))
-       (calctex-mode 1)
-       (execute-kbd-macro (kbd "' a <RET>"))
-       (execute-kbd-macro (kbd "2 <RET> *"))
-       (let ((ov (nth-overlay 0)))
-         (assert-overlay-image-equals ov "2a_lowres.png")
-         (should (equal (overlay-display-property ov :type) 'png)))
-       ))))
+  (calctex-mode 1)
+  (let* ((calctex-imagemagick-enabled-p nil)
+         (image-desc (funcall calctex-render-process src-2a)))
+    (assert-image-descriptor-file-equals image-desc "2a_lowres.png")
+    (should (equal (plist-get image-desc :type) 'png))
+    (should (equal (plist-get image-desc :format) nil))
+    (should (equal (plist-get image-desc :scale) nil))))
 
 (ert-deftest test-imagemagick-enabled ()
-  (with-calc-test-harness
-   (lambda ()
-     (let ((calctex-imagemagick-enabled-p t))
-       (calctex-mode 1)
-       (execute-kbd-macro (kbd "' a <RET>"))
-       (execute-kbd-macro (kbd "2 <RET> *"))
-       (let ((ov (nth-overlay 0)))
-         (assert-overlay-image-equals ov "2a.png")
-         (should (equal (overlay-display-property ov :type) 'imagemagick))
-         (should (equal (overlay-display-property ov :format) 'png))
-         (should (equal (overlay-display-property ov :scale) (/ calctex-imagemagick-png-scaling calctex-base-imagemagick-png-scaling)))))
-     )))
+  (calctex-mode 1)
+  (let* ((calctex-imagemagick-enabled-p t)
+         (image-desc (funcall calctex-render-process src-2a)))
+         (assert-image-descriptor-file-equals image-desc "2a.png")
+         (should (equal (plist-get image-desc :type) 'imagemagick))
+         (should (equal (plist-get image-desc :format) 'png))
+         (should (equal (plist-get image-desc :scale)
+                        (/ calctex-imagemagick-png-scaling calctex-base-imagemagick-png-scaling)))))
 
 (ert-deftest creates-parents-of-image-cache ()
-  (progn
-    (with-calc-test-harness
-     (lambda ()
-       (let ((calctex-latex-image-directory "./calctex-image-cache"))
-         (progn
-           (calctex-mode 1)
-           (execute-kbd-macro (kbd "' a <RET>"))
-           (execute-kbd-macro (kbd "2 <RET> *"))
-           (assert-nth-overlay-image-equals 0 "2a.png")))))))
+  (calctex-mode 1)
+  (let ((calctex-latex-image-directory "./calctex-image-cache"))
+    (assert-converts-latex-to-file src-2a "2a.png")))
 
 (ert-deftest renders-si ()
-  (progn
-    (set-face-attribute 'default nil :foreground "black" :background "white")
-    (assert-renders-tex-to-image
-     "\\[ \\boxed{\\eta = \\frac{\\SI{6.27e8}{\\joule}}{\\SI{7.96e9}{\\joule}} = 0.0787} \\]"
-     "joules.png")))
+  (calctex-mode 1)
+  (set-face-attribute 'default nil :foreground "black" :background "white")
+  (assert-converts-latex-to-file
+   "\\[ \\boxed{\\eta = \\frac{\\SI{6.27e8}{\\joule}}{\\SI{7.96e9}{\\joule}} = 0.0787} \\]"
+   "joules.png"))
+
+(ert-deftest renders-2a ()
+  (calctex-mode 1)
+  (assert-converts-latex-to-file src-2a "2a.png"))
+
+(ert-deftest renders-multiple-sources ()
+  (calctex-mode 1)
+  (assert-converts-latex-to-file "\\[ 4a \\]" "4a.png")
+  (assert-converts-latex-to-file "\\[ 4 a \\]" "4a.png")
+  (assert-converts-latex-to-file "\\[ {4}{a} \\]" "4a.png")
+  (assert-converts-latex-to-file "\\[ a^2 + b^{2} = c^2 \\]" "pythag.png")
+  )
 
 (provide 'calctex-test)

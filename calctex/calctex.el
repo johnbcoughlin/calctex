@@ -89,6 +89,10 @@ faster TeXD rendering engine."
   :type '(string)
   :group 'calctex)
 
+; TODO remove this
+(setq calctex-dvichop-sty "/Users/jack/src/calctex/vendor/texd/dvichop")
+(setq calctex-dvichop-bin "/Users/jack/src/calctex/vendor/texd/bin/dvichop")
+
 (defcustom calctex-dvichop-bin nil
   "The path to the dvichop binary, if one is installed. This only has an effect
 if `calctex-dvichop-sty' is non-nil. If both variables are non-nil, then calctex
@@ -96,11 +100,10 @@ will use the faster TeXD rendering engine."
   :type '(string)
   :group 'calctex)
 
-(defvar calctex-render-process #'calctex-texd-render-process
+(defvar calctex-render-process #'calctex-default-dispatching-render-process
   "Function that renders a snippet of LaTeX source into an image.
-Will be called with SRC, the LaTeX source code. Should return a
-plist with properties 'file and 'type, representing the path to the
-rendered image and the image type.")
+Will be called with SRC, the LaTeX source code. Should return an
+image descriptor.")
 
 ;;; LaTeX Header
 (defun calctex-format-latex-header ()
@@ -187,9 +190,32 @@ background and foreground color definitions, then by
   )
 
 ;;; Rendering
+;;;; Dispatch
+(defun calctex-default-dispatching-render-process (tex)
+  "The default function that calctex will use to render LaTeX TEX.
+This is the default value of `calctex-render-process'.
+
+It first tries to use the fastest path, which is the texnetium/ReX
+renderer. If that fails or is not installed, it will fall back to the
+slower texd renderer. If that fails or is not installed, it will use
+the whole process LaTeX+DVIPNG renderer."
+  (message "Rendering LaTeX: %s" tex)
+  (let ((texnetium-attempt (when calctex--texnetium-workable
+                             (calctex--texnetium-render-svg tex))))
+    (cond
+     ((not (null texnetium-attempt)) texnetium-attempt)
+     (t (let* ((filespec (if (calctex--texd-workable)
+                             (calctex-texd-render-process tex)
+                           (calctex-subproc-render-process tex)))
+               (img-file (plist-get filespec 'file))
+               (img-type (plist-get filespec 'type)))
+          (progn
+            (calctex--image-plist img-type img-file)
+            ))))))
+
 ;;;; Default process
 ;;;###autoload
-(defun calctex-default-render-process (src)
+(defun calctex-subproc-render-process (src)
   "The default function that calctex will use to render LaTeX SRC."
   (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
          (bg (calctex--latex-color :background))
@@ -239,14 +265,12 @@ background and foreground color definitions, then by
 (defvar calctex-workdir nil)
 
 (defun calctex-accept-latex-output (proc string)
-  (let ((err (string-match-p "^\\*?!" string)))
-    (if err
-        (progn
-          (if
-              (yes-or-no-p (format "LaTeX Render Error:\n%s\n\nRestart the render process?" string))
-              (calctex-setup-texd))
-          (setq calctex-latex-success nil))
-      (setq calctex-latex-success t))))
+  ;(message ">>>>>%s<<<<<" string)
+  (with-current-buffer (process-buffer proc)
+    (goto-char (point-max))
+    (let ((done (re-search-backward "\\[[[:digit:]]+\\.4\\.?[[:digit:]]*\\]" nil t)))
+      (progn
+        (when done (setq calctex-latex-success t))))))
 
 (defun calctex-setup-texd ()
   (condition-case nil
@@ -276,7 +300,7 @@ background and foreground color definitions, then by
       (setq calctex-dvichop-proc dvichop-proc)
       (process-send-string latex-proc (calctex-format-latex-header))
       (process-send-string latex-proc (format "\\usepackage{%s}\n" calctex-dvichop-sty))
-      (process-send-string latex-proc "\\let\\DviFlush\\relax\n")
+      ;(process-send-string latex-proc "\\let\\DviFlush\\relax\n")
       (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
       (process-send-string latex-proc "\\begin{document}\n")
       (process-send-string latex-proc "\\DviOpen\n")
@@ -284,6 +308,10 @@ background and foreground color definitions, then by
       (message "all set up and ready to go"))))
 
 (defun calctex-texd-render-process (src)
+  (setq calctex-latex-success nil
+        calctex-latex-error nil)
+  (with-current-buffer (process-buffer calctex-latex-proc)
+    (erase-buffer))
   (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
          (bg (calctex--latex-color :background))
          (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) (calctex-format-latex-header)))))
@@ -291,32 +319,53 @@ background and foreground color definitions, then by
          )
     (process-send-string calctex-latex-proc (format "\\definecolor{fg}{rgb}{%s}
                                                     \\definecolor{bg}{rgb}{%s}" fg bg))
-    (process-send-string calctex-latex-proc "\\DviBegin\\shipout\\vbox{")
-    (process-send-string calctex-latex-proc "\\pagecolor{bg}{\\color{fg}")
-    (process-send-string calctex-latex-proc src)
-    (process-send-string calctex-latex-proc "}}\\DviEnd\n")
     (unless (file-exists-p tofile)
-      (accept-process-output calctex-latex-proc 0.3)
-      (if calctex-latex-success
-          (let* ((default-directory calctex-workdir)
-                 (dvipng-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s.png 0.dvi"
-                                     fg bg (calctex--dpi) hash)))
-            (save-window-excursion
-              (let ((inhibit-message t))
-                (shell-command dvipng-cmd (get-buffer-create "*CalcTeX-DVIPNG*")))
-              (unless (file-exists-p tofile)
-                (error "Error converting dvi to png. Check *CalcTeX-DVIPNG* for command output"))))
+      (calctex--texd-shipout-page src)
+      (while (not (or calctex-latex-success calctex-latex-error))
+        (accept-process-output calctex-latex-proc 0.1))
+      (when calctex-latex-success
+        (let* ((default-directory calctex-workdir)
+               (dvipng-cmd (format "dvipng -fg \"rgb %s\" -bg \"rgb %s\" -D %s -T tight -o %s.png 0.dvi"
+                                   fg bg (calctex--dpi) hash)))
+          (save-window-excursion
+            (let ((inhibit-message t))
+              (shell-command dvipng-cmd (get-buffer-create "*CalcTeX-DVIPNG*")))
+            (unless (file-exists-p tofile)
+              (error "Error converting dvi to png. Check *CalcTeX-DVIPNG* for command output")))))
+      (when calctex-latex-error
         (error "LaTeX Render Error")))
-      `(file ,tofile type png)))
+    `(file ,tofile type png)))
+
+(defun calctex--texd-shipout-page (src)
+  (process-send-string calctex-latex-proc "\\DviBegin\n\\shipout\\vbox{\n")
+  (process-send-string calctex-latex-proc "\\pagecolor{bg}{\\color{fg}\n")
+  (process-send-string calctex-latex-proc src)
+  (process-send-string calctex-latex-proc "\n}}\n\\DviEnd\n")
+  (accept-process-output calctex-latex-proc 0.9)
+  )
+
+(defun calctex--texd-kick-tires ()
+  (process-send-string calctex-latex-proc "\\DviBegin\\shipout\\vbox{")
+  (process-send-string calctex-latex-proc "\\pagecolor{bg}{\\color{fg}")
+  (process-send-string calctex-latex-proc "}}\\DviEnd\n")
+  (accept-process-output calctex-latex-proc 0.3)
+  )
 
 ;;;; ReX/TeXnetium
-(defun calctex-rex-svg-render-process (src)
+(defvar calctex--texnetium-workable nil)
+
+(with-eval-after-load 'texnetium
+  (setq calctex--texnetium-workable t))
+
+(defun calctex--texnetium-can-handle-tex (src)
+  (let* ))
+
+(defun calctex--texnetium-render-svg (src)
   (let* ((svg-src (texnetium-render-svg src 16))
          (svg (apply #'create-image svg-src 'svg t ())))
     (progn
-      (message "%s" svg-src)
-      svg)
-    ))
+      svg)))
+
 ;;;; Sidechannel variables
 (defvar calctex--calc-line-numbering nil
   "Sidechannel used to store the value of variable `calc-line-numbering'.
@@ -432,43 +481,39 @@ Renders line overlays in the calc buffer."
 
 (defun calctex--render-file-overlay-at (tex ov margin)
   (let* ((img (funcall calctex-render-process tex))
-         (img-file (plist-get img 'file))
-         (img-type (plist-get img 'type)))
+         (img-file (plist-get img :file))
+         (img-type (plist-get img :type)))
     (progn
       (if img-file
           (overlay-put
            ov
            'display
-           (calctex--image-overlay-display img-type img-file margin)))
+           `(image . ,img)))
       )))
 
 (defun calctex--render-svg-overlay-at (tex ov margin)
-  (let ((svg (calctex-rex-svg-render-process tex)))
+  (let ((svg (calctex-render-process tex)))
     (overlay-put
      ov
      'display
      svg)))
      ;(list 'image :type 'svg :data svg :margin margin :ascent 'center))))
 
-(defun calctex--image-overlay-display (img-type img-file margin)
+(defun calctex--image-plist (img-type img-file)
   "Return the 'display property of an image overlay.
 
 Returns a 'display form for IMG-FILE rendered as IMG-TYPE. If
 imagemagick support is enabled, use that, otherwise, fall back to
 .png."
   (if (calctex--imagemagick-support)
-      (list 'image
-            :type 'imagemagick
+      (list :type 'imagemagick
             :format img-type
             :file img-file
             :ascent 'center
-            :scale (/ calctex-imagemagick-png-scaling calctex-base-imagemagick-png-scaling)
-            :margin margin)
-    (list 'image
-          :type img-type
+            :scale (/ calctex-imagemagick-png-scaling calctex-base-imagemagick-png-scaling))
+    (list :type img-type
           :file img-file
-          :ascent 'center
-          :margin margin)))
+          :ascent 'center)))
 
 (defun calctex--imagemagick-support ()
   "Whether imagemagick support for images is available and enabled."
@@ -543,7 +588,7 @@ Called by `calctex--create-line-overlays'."
            (tex (format "\\begin{align*} %s \\end{align*}" selected-line-contents)))
       (progn
         (move-overlay ov line-start line-end)
-        (calctex--render-svg-overlay-at tex ov 2))))
+        (calctex--render-overlay-at tex ov 2))))
 
 (defun calctex--lift-selection (text line-start line-end)
   "Wrap selected portions of a LaTeX formula in a color directive.
