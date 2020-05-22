@@ -51,6 +51,13 @@
    "\\[ \\boxed{\\eta = \\frac{\\SI{6.27e8}{\\joule}}{\\SI{7.96e9}{\\joule}} = 0.0787} \\]"
    "joules.png"))
 
+(ert-deftest recovers-from-error ()
+  (calctex-mode 1)
+  (let ((err (should-error (funcall calctex-render-process "\\[ \\left( a^2 + b^2 = c^2 ) \\]"))))
+    (should (string= (error-message-string err) "LaTeX Render Error. Renderer restarted.")))
+  (assert-converts-latex-to-file "\\[ a^2 + b^{2} = c^2 \\]" "pythag.png")
+  )
+
 (ert-deftest renders-2a ()
   (calctex-mode 1)
   (assert-converts-latex-to-file src-2a "2a.png"))

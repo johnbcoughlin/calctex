@@ -268,9 +268,11 @@ the whole process LaTeX+DVIPNG renderer."
   ;(message ">>>>>%s<<<<<" string)
   (with-current-buffer (process-buffer proc)
     (goto-char (point-max))
-    (let ((done (re-search-backward "\\[[[:digit:]]+\\.4\\.?[[:digit:]]*\\]" nil t)))
-      (progn
-        (when done (setq calctex-latex-success t))))))
+    (let ((err (re-search-backward "^\\*!" nil t)))
+      (if err (setq calctex-latex-error t)
+        (let ((done (re-search-backward "\\[[[:digit:]]+\\.4\\.?[[:digit:]]*\\]" nil t)))
+          (progn
+            (when done (setq calctex-latex-success t))))))))
 
 (defun calctex-setup-texd ()
   (condition-case nil
@@ -300,11 +302,10 @@ the whole process LaTeX+DVIPNG renderer."
       (setq calctex-dvichop-proc dvichop-proc)
       (process-send-string latex-proc (calctex-format-latex-header))
       (process-send-string latex-proc (format "\\usepackage{%s}\n" calctex-dvichop-sty))
-      ;(process-send-string latex-proc "\\let\\DviFlush\\relax\n")
       (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
       (process-send-string latex-proc "\\begin{document}\n")
       (process-send-string latex-proc "\\DviOpen\n")
-      (sit-for 1)
+      (sit-for 0.5)
       (message "all set up and ready to go"))))
 
 (defun calctex-texd-render-process (src)
@@ -333,7 +334,8 @@ the whole process LaTeX+DVIPNG renderer."
             (unless (file-exists-p tofile)
               (error "Error converting dvi to png. Check *CalcTeX-DVIPNG* for command output")))))
       (when calctex-latex-error
-        (error "LaTeX Render Error")))
+        (calctex-setup-texd)
+        (error "LaTeX Render Error. Renderer restarted.")))
     `(file ,tofile type png)))
 
 (defun calctex--texd-shipout-page (src)
