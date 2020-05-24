@@ -1,4 +1,5 @@
-;; texmathp.el -- Code to check if point is inside LaTeX math environment
+;;; texmathp.el --- Code to check if point is inside LaTeX math environment
+
 ;; Copyright (c) 2003 Free Software Foundation, Inc.
 
 ;; Author: Carsten Dominik <dominik@science.uva.nl>
@@ -95,8 +96,6 @@
 ;;--------------------------------------------------------------------------
 
 ;;; Code:
-
-(provide 'texmathp)
 
 (defgroup texmathp nil
   "Testing TeX and LaTeX documents for math mode."
@@ -365,5 +364,7 @@ See the variable `texmathp-tex-commands' about which commands are checked."
                (match-beginning 1) (match-end 1))
 	      (match-beginning 1))
       nil)))
+
+(provide 'texmathp)
 
 ;;; texmathp.el ends here
