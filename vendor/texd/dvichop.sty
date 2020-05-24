@@ -1,0 +1,60 @@
+% $Id: dvichop.sty,v 1.1 2002/02/22 20:36:59 jfine Exp $
+% TeX macros providing an interface to dvichop
+
+% Copyright (c) Jonathan Fine, 2001
+% mailto:jfine@activetex.org
+
+% This program is free software; you can redistribute it and/or modify
+% it under the terms of the GNU General Public License; either version
+% 2 of the License, or (at your option) any later version.
+
+% $Log: dvichop.sty,v $
+% Revision 1.1  2002/02/22 20:36:59  jfine
+% Initial revision
+%
+
+%  Take care of LaTeX/LaTeX2e bookkeeping.
+\ifx \documentstyle \undefined \else
+  \ifx \documentclass \undefined
+  \else \ProvidesPackage{dvichop}[2002/03/02] \fi
+\fi
+
+\global\mathchardef\DviNum 0 % write file \number\DviNum.dvi
+\global\mathchardef\DviPid 0 % if non-zero send SIGUSR1 to the process
+\chardef\DviVer 99 % interface version number (99 means not yet stable)
+
+\def\DviMark #1#2#3% write a marker page
+{%
+  \begingroup
+    \count0 \maxdimen % key value
+    \count1 #1% operation
+    \count2 #2% operand
+    \count3 #3% operand 
+    \count4 0 \count5 0 \count6 0
+    \count7 0 \count8 0 \count9 0
+    \shipout\hbox{}%
+  \endgroup
+}
+
+\def\DviOpen {\DviMark 1\DviVer0} % say "Hello" to dvichop
+\def\DviClose {\DviMark 200} % say "Goodbye" to dvichop
+\def\DviBegin {\DviMark 300} % write following to dvi file ...
+\def\DviEnd {\DviMark 4\DviNum\DviPid\DviFlush} % ... up to here
+
+\newbox\DviFlushBox % just big enough to be sure to flush |dvi_buf|
+\setbox\DviFlushBox\hbox{%
+  \count0 8192 % half of |dvi_buf_size|
+  \multiply\count0 2 % now |dvi_buf_size|
+  \advance\count0 -51 % overhead (bop=45, special=5, eop=1)
+  \multiply\count0 1000 % who did I learn this from?
+  \special{\romannumeral \count0}} % just big enough to flush
+
+\def\DviFlush {%
+  \DviBegin
+  \shipout\copy\DviFlushBox
+  \DviMark 400% \DviEnd, writes file "0.dvi", no signal
+}
+
+\let\DviFlush\relax %% uncomment only if you're running "tex --ipc"
+
+% end of dvichop.sty

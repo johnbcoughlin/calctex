@@ -1,0 +1,84 @@
+# $Id: README,v 1.2 2002/02/23 15:19:23 jfine Exp $
+# This file is for release 0.3 of texd
+
+
+THE TEX DAEMON AND TEXPAD
+=========================
+This bundle has two major parts.  
+
+The first is texd, the TeX daemon.  Applied to small files, texd can
+be many times quicker than the regular way of using TeX.
+
+The second is TeXpad and LaTeXpad, which are interactive 'calculators'
+for evaluating small pieces of TeX code.
+
+For news and updates, visit the Active TeX website
+    http://www.activetex.org
+
+
+THE TEX DAEMON
+==============
+TeX is an efficient typesetting program, but it takes a while to get
+going.  On my machine, which is a 225MHz Cyrix, it takes a full
+quarter second to load, but then it can process a simple page in 5
+thousands of a second.  In other words, the ratio is about 50 to 1.
+
+The commands
+    $ time tex \\end 
+    $ time tex story \\end 
+will tell the story for your machine.
+
+The TeX daemon allows us to avoid this start-up overhead.  
+
+
+DVICHOP
+=======
+This is a new program, written specifically to enable the TeX daemon.
+
+The dvichop program takes as input a stream of dvi pages.  Its output
+is a sequence of usually small dvi files.  Marker pages in the input
+stream control the division into output dvi files.
+
+
+IPCTEX
+======
+
+Most implementations of TeX, for reasons of efficiency, buffer their
+output dvi stream.  This forces the TeX daemon to write empty pages,
+to flush out the current page.  This is inefficient.
+
+To get the best out the the TeX daemon, you will need a version of TeX
+that disables this system dependant feature.  For example, in the
+web2c version, build with --enable-ipc and call with command line
+switch -ipc.
+
+
+HISTORY OF IPCTEX
+=================
+Tom Rokicki's implementation of TeX for the NeXT computer contained an
+important innovation.  It allowed the previewer to start previewing
+the dvi file, before TeX had finished producing it.  To support this,
+it allowed output to be written to a socket.  It also suppressed the
+output buffering.
+
+Essentially, ipctex is Tom Rokicki's TeX for NeXT.
+
+
+INSTANT PREVIEW
+===============
+Previously, Instant Preview was part of the "texd" package.  From
+now on, it will be distributed separately.
+
+Instant Preview is being rewritten, to use the interface to the TeX
+daemon exposed by the new file "dvichop.sty".
+
+
+REQUIREMENTS
+============
+
+This software has been developed on Linux.  It should run on Unix
+platforms, but this has not been tested.
+
+See the separate file INSTALL for installation notes.
+
+# README ends here

@@ -16,15 +16,28 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 (require 'calc)
+(require 'calccomp)
 (require 'calctex-contrib)
 (require 'ert)
-(require 'test-utils)
 
 (defun with-calc-test-harness (body)
   (calc)
   (calc-reset 0)
   (calc-no-simplify-mode t)
+  (calc-line-breaking nil)
+  (calc-algebraic-mode 0)
+  (calc-symbolic-mode t)
   (calc-latex-language nil)
+  (setq calctex-contrib-context-decls (list))
+  (calctex-contrib-refresh)
+  (with-current-buffer "*Calculator*" (funcall body)))
+
+(defun with-calc-test-harness-normal-language (body)
+  (calc)
+  (calc-reset 0)
+  (calc-line-breaking nil)
+  (calc-no-simplify-mode t)
+  (calc-normal-language)
   (with-current-buffer "*Calculator*" (funcall body)))
 
 (defun calc-stack-line (n)
@@ -46,6 +59,15 @@
      (calctex-contrib-refresh)
      (calc-eval "a" 'push)
      (should (equal (calc-stack-line 1) "\\vec{a}")))))
+
+(ert-deftest test-displays-vector-variable-normal ()
+  (with-calc-test-harness-normal-language
+   (lambda ()
+     (setq calctex-contrib-context-decls
+           (list "[a, vector]"))
+     (calctex-contrib-refresh)
+     (calc-eval "a" 'push)
+     (should (equal (calc-stack-line 1) "vec(a)")))))
 
 (ert-deftest test-displays-matrix-no-particular-way ()
   (with-calc-test-harness
@@ -70,3 +92,48 @@
      (calc-eval "adx\r" 'macro)
      (should (equal (calc-stack-line 1) "\\frac{\\partial g}{\\partial x}")))))
 
+(ert-deftest test-derivative-of-multieq ()
+  (with-calc-test-harness
+   (lambda ()
+     (calctex-contrib-refresh)
+     (calc-eval "eq(a, deriv(b, x), c)" 'push)
+     (should (equal (calc-stack-line 1) "a = \\frac{\\partial b}{\\partial x} = c")))))
+
+(ert-deftest test-derivative-of-vector ()
+  (with-calc-test-harness
+   (lambda ()
+     (setq calctex-contrib-context-decls
+           (list "[a, vector]"))
+     (calctex-contrib-refresh)
+     (calc-eval "a" 'push)
+     (calc-eval "adx\r" 'macro)
+     (should (equal (calc-stack-line 1) "\\frac{\\partial \\vec{a}}{\\partial x}")))))
+
+(ert-deftest test-cos-power ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "cos(x)^n" 'push)
+     (should (equal (calc-stack-line 1) "\\cos^{n}{x}"))
+     )))
+
+(ert-deftest test-sin-power ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "sin(x)^n" 'push)
+     (should (equal (calc-stack-line 1) "\\sin^{n}{x}"))
+     )))
+
+(ert-deftest test-multieq ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "eq(a, b, c)" 'push)
+     (should (equal (calc-stack-line 1) "a = b = c")))))
+
+(ert-deftest test-integrals-not-simplified ()
+  (with-calc-test-harness
+   (lambda ()
+     (calc-eval "((cos(g) exp(g)) exp(sin(sqrt(f + g^2)))) (g^3 - e^g)" 'push)
+     (calc-eval "aig" 'macro)
+     (let ((messages (with-current-buffer "*Messages*"
+                       (re-search-backward "Working... Integrating" nil t))))
+       (should (equal messages nil))))))

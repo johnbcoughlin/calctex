@@ -1,0 +1,29 @@
+* Heading 1
+** An equation
+\[ \cmt{a^2 + b^2 = c^2} a^2 + b^2 = c^2 \]
+** Another one
+$\cmt{exp(i * pi) + 1 = 0} e^{i\pi} + 1 = 0$
+
+postamble
+
+$a + b$
+
+$x + 4y$
+
+\begin{align*}
+\int y ds
+\end{align*}
+
+\begin{equation*}
+\sum 4 + x
+\end{equation*}
+
+\begin{equation*}
+\prod x + y
+\end{equation*}
+
+\begin{align*}
+\int r dr
+\end{align*}
+
+$\mu$

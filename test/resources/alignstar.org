@@ -1,0 +1,4 @@
+* Align* eq
+\begin{align*}
+\cmt{45 + i} 45 + i
+\end{align*}
