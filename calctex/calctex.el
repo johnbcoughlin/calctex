@@ -394,19 +394,20 @@ then restore its value.")
   (if calctex-mode
       (progn
         (save-excursion
-          (progn
-            (calctex-setup-texd)
-            (add-hook 'pre-command-hook #'calctex--precommand)
-            (add-hook 'post-command-hook #'calctex--postcommand)
-            (add-hook 'post-self-insert-hook #'calctex--postcommand)
-            (calctex--preprocess-latex-header)
-            (setq calctex--calc-line-breaking calc-line-breaking)
-            (setq calctex--calc-highlight-selections-with-faces calc-highlight-selections-with-faces)
-            (setq calc-highlight-selections-with-faces t)
-            (message "Starting calc")
-            (unless (get-buffer "*Calculator*") (calc))
-            (calc-show-selections -1)
-            (calc-latex-language nil))))
+          (save-window-excursion
+            (progn
+              (calctex-setup-texd)
+              (add-hook 'pre-command-hook #'calctex--precommand)
+              (add-hook 'post-command-hook #'calctex--postcommand)
+              (add-hook 'post-self-insert-hook #'calctex--postcommand)
+              (calctex--preprocess-latex-header)
+              (setq calctex--calc-line-breaking calc-line-breaking)
+              (setq calctex--calc-highlight-selections-with-faces calc-highlight-selections-with-faces)
+              (setq calc-highlight-selections-with-faces t)
+              (message "Starting calc")
+              (unless (get-buffer "*Calculator*") (calc))
+              (calc-show-selections -1)
+              (calc-latex-language nil)))))
     (progn
       (remove-hook 'pre-command-hook #'calctex--precommand)
       (remove-hook 'post-command-hook #'calctex--postcommand)
