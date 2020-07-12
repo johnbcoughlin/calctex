@@ -28,6 +28,7 @@
 
 (require 'org)
 (require 'calctex)
+(require 'hydra)
 (require 'posframe)
 (require 'cdlatex)
 
@@ -401,8 +402,6 @@ jumps back to register `f'."
   ("r" org-calctex-activate "replace" :color blue)
   ("e" cdlatex-environment-hydra/body "Insert equation environment" :color blue)
   ("q" nil "quit" :color blue))
-
-(define-key calctex-mode-map (kbd "s-f") 'calctex-hydra/body)
 
 (provide 'org-calctex)
 
