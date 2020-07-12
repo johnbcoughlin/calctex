@@ -346,13 +346,6 @@ jumps back to register `f'."
       (calctex--render-overlay-at-point)
       (calc))))
 
-(with-eval-after-load 'evil-org
-  (evil-define-key 'normal evil-org-mode-map
-    "o" '(lambda ()
-           (interactive)
-           (calctex-move-to-end-of-frag)
-           (evil-org-eol-call 'clever-insert-item))))
-
 ;;; Post-insert hooks
 
 (defun calctex-mode-hook-hook ()
