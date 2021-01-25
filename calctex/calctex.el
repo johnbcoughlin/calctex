@@ -150,6 +150,7 @@ background and foreground color definitions, then by
 \\usepackage{adjustbox}
 \\usepackage{amsmath}
 \\usepackage{amssymb}
+\\usepackage{bm}
 \\usepackage{siunitx}
 \\usepackage{cancel}
 \\usepackage{mathtools}
