@@ -271,6 +271,7 @@ void write_preamble(void)
  */
 void read_eop(void);
 void read_bop(void);
+int get_dviop(void);
 
 void read_first_page(void)
 {
@@ -282,7 +283,9 @@ void read_first_page(void)
         if (IF_VER != if_ver)
                 die("unknown interface\n");
 
-        read_eop();
+        while (get_dviop() != dviop_eop) {
+                // Skip garbage at beginning
+        }
         read_bop();
 }
 
@@ -336,6 +339,11 @@ int get_dviop(void)
                 if (EOF == c)
                         die("unable to get dviop\n");
         } while (dviop_nop == c);
+        if (0 <= c && c <= 127) {
+                printf("dviop = %c\n", (char)c);
+        } else {
+                printf("dviop = %u\n", c);
+        }
         return c;
 }
 
