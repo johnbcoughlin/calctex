@@ -266,7 +266,7 @@ the whole process LaTeX+DVIPNG renderer."
 (defvar calctex-workdir nil)
 
 (defun calctex-accept-latex-output (proc string)
-  ;(message ">>>>>%s<<<<<" string)
+  ;; (message ">>>>>%s<<<<<" string)
   (with-current-buffer (process-buffer proc)
     (goto-char (point-max))
     (let ((err (re-search-backward "^\\*!" nil t)))
@@ -301,6 +301,8 @@ the whole process LaTeX+DVIPNG renderer."
       (setq calctex-latex-proc latex-proc)
       (add-function :after (process-filter latex-proc) #'calctex-accept-latex-output)
       (setq calctex-dvichop-proc dvichop-proc)
+      (with-current-buffer (process-buffer latex-proc)
+        (erase-buffer))
       (process-send-string latex-proc (calctex-format-latex-header))
       (process-send-string latex-proc (format "\\usepackage{%s}\n" calctex-dvichop-sty))
       (process-send-string latex-proc "\\newcommand{\\cmt}[1]{\\ignorespaces}")
@@ -312,8 +314,8 @@ the whole process LaTeX+DVIPNG renderer."
 (defun calctex-texd-render-process (src)
   (setq calctex-latex-success nil
         calctex-latex-error nil)
-  (with-current-buffer (process-buffer calctex-latex-proc)
-    (erase-buffer))
+  ;; (with-current-buffer (process-buffer calctex-latex-proc)
+  ;;   (erase-buffer))
   (let* ((fg (calctex--latex-color :foreground (- calctex-foreground-darken-percent)))
          (bg (calctex--latex-color :background))
          (hash (sha1 (prin1-to-string (list src fg bg (calctex--dpi) (calctex-format-latex-header)))))
