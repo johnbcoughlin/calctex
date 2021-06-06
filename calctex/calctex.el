@@ -153,7 +153,6 @@ background and foreground color definitions, then by
 \\usepackage{siunitx}
 \\usepackage{cancel}
 \\usepackage{mathtools}
-\\usepackage[cal=dutchcal]{mathalpha}
 \\usepackage{xparse}
 \\usepackage{stix2}
 \\usepackage{bm}
