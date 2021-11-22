@@ -63,7 +63,7 @@
     (calctex--render-overlay-at tex ov margin)))
 
 (defun calctex-latex-fragment-at-point ()
-  "Returns the LaTeX fragment at point, or nil if none"
+  "Return the LaTeX fragment at point, or nil if none."
   (let ((ctx (org-element-context)))
     (if (or (eq 'latex-fragment (org-element-type ctx))
             (eq 'latex-environment (org-element-type ctx)))
@@ -73,7 +73,6 @@
 (add-hook 'fill-nobreak-predicate #'calctex-latex-fragment-at-point)
 
 (defun calctex--modification-hook (ov after beg end &optional len)
-  
   (condition-case nil
       (calctex--render-overlay-at-point)
     (error (progn
@@ -99,7 +98,9 @@
                                overlays)))
     (car overlays)))
 
+;;;###autoload
 (defun org-calctex-hide-overlay-at-point ()
+  "Toggle display of the overlay at point."
   (interactive)
   (let* ((ov (org-calctex-overlay-at-point)))
     (if ov
@@ -388,6 +389,7 @@ jumps back to register `f'."
   ("c" (cdlatex-environment "cases") "cases" :color blue)
   ("p" (cdlatex-environment "pmatrix") "pmatrix" :color blue))
 
+;;;###autoload (autoload 'calctex-hydra/body "org-calctex" nil t)
 (defhydra calctex-hydra (:color red)
   ("h" org-calctex-hide-overlay-at-point "show/hide overlays")
   ("n" org-calctex-next-formula "next")

@@ -154,7 +154,6 @@ background and foreground color definitions, then by
 \\usepackage{cancel}
 \\usepackage{mathtools}
 \\usepackage{xparse}
-\\usepackage{stix2}
 \\usepackage{bm}
 ")
 
